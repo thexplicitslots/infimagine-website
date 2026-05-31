@@ -1,0 +1,224 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="robots" content="noindex,nofollow" />
+    <meta name="theme-color" content="#081014" />
+    <title>InfiMagine Admin</title>
+    <link rel="icon" type="image/png" sizes="32x32" href="/assets/favicon-32.png" />
+    <link rel="apple-touch-icon" sizes="180x180" href="/assets/apple-touch-icon.png" />
+    <link rel="stylesheet" href="/admin.css" />
+  </head>
+  <body>
+    <div class="admin-shell">
+      <aside class="admin-sidebar" aria-label="Admin navigation">
+        <a class="admin-brand" href="/admin" aria-label="InfiMagine admin home">
+          <span class="admin-mark" aria-hidden="true">
+            <img src="/assets/infimagine-logo-cropped.png" alt="" />
+          </span>
+          <span>
+            <strong>InfiMagine</strong>
+            <small>Admin studio</small>
+          </span>
+        </a>
+
+        <nav class="admin-nav">
+          <a class="is-active" href="#dashboard">Dashboard</a>
+          <a href="#requests">Requests</a>
+          <a href="#pipeline">Pipeline</a>
+          <a href="#import">Import</a>
+        </nav>
+
+        <div class="admin-note">
+          <span>Local prototype</span>
+          <p>Requests are stored in this browser until a database is connected.</p>
+        </div>
+      </aside>
+
+      <main class="admin-main">
+        <header class="admin-topbar">
+          <div>
+            <p class="eyebrow">Owner workspace</p>
+            <h1>Quote control center</h1>
+          </div>
+          <div class="topbar-actions">
+            <a class="button ghost" href="/" target="_blank" rel="noreferrer">View site</a>
+            <button class="button primary" type="button" data-export>Export CSV</button>
+          </div>
+        </header>
+
+        <section class="metrics-grid" id="dashboard" aria-label="Admin metrics">
+          <article class="metric-card">
+            <span>Open requests</span>
+            <strong data-metric="open">0</strong>
+          </article>
+          <article class="metric-card">
+            <span>Needs reply</span>
+            <strong data-metric="new">0</strong>
+          </article>
+          <article class="metric-card">
+            <span>In progress</span>
+            <strong data-metric="progress">0</strong>
+          </article>
+          <article class="metric-card">
+            <span>Estimated value</span>
+            <strong data-metric="value">₹0</strong>
+          </article>
+        </section>
+
+        <section class="admin-grid">
+          <div class="panel requests-panel" id="requests">
+            <div class="panel-heading">
+              <div>
+                <p class="eyebrow">Requests</p>
+                <h2>Customer pipeline</h2>
+              </div>
+              <button class="icon-button" type="button" data-add-lead aria-label="Add request">+</button>
+            </div>
+
+            <div class="toolbar">
+              <label class="search-field">
+                <span>Search</span>
+                <input type="search" data-search placeholder="Name, project, material..." />
+              </label>
+              <label>
+                <span>Status</span>
+                <select data-status-filter>
+                  <option value="all">All</option>
+                  <option value="New">New</option>
+                  <option value="Contacted">Contacted</option>
+                  <option value="Designing">Designing</option>
+                  <option value="Quoted">Quoted</option>
+                  <option value="Won">Won</option>
+                  <option value="Archived">Archived</option>
+                </select>
+              </label>
+            </div>
+
+            <div class="lead-list" data-lead-list></div>
+          </div>
+
+          <aside class="panel detail-panel" aria-live="polite">
+            <div class="detail-empty" data-empty>
+              <p class="eyebrow">Selection</p>
+              <h2>Select a request</h2>
+              <p>Open a customer request to update status, notes, material direction, and next action.</p>
+            </div>
+
+            <article class="detail-card" data-detail hidden>
+              <div class="detail-header">
+                <div>
+                  <p class="eyebrow" data-detail-type>Project</p>
+                  <h2 data-detail-title>Request</h2>
+                  <span data-detail-contact></span>
+                </div>
+                <span class="status-pill" data-detail-status>New</span>
+              </div>
+
+              <div class="detail-actions">
+                <label>
+                  <span>Status</span>
+                  <select data-detail-status-select>
+                    <option>New</option>
+                    <option>Contacted</option>
+                    <option>Designing</option>
+                    <option>Quoted</option>
+                    <option>Won</option>
+                    <option>Archived</option>
+                  </select>
+                </label>
+                <label>
+                  <span>Priority</span>
+                  <select data-detail-priority>
+                    <option>Normal</option>
+                    <option>High</option>
+                    <option>Low</option>
+                  </select>
+                </label>
+              </div>
+
+              <dl class="detail-meta">
+                <div>
+                  <dt>Estimate</dt>
+                  <dd data-detail-estimate></dd>
+                </div>
+                <div>
+                  <dt>Material</dt>
+                  <dd data-detail-material></dd>
+                </div>
+                <div>
+                  <dt>Timeline</dt>
+                  <dd data-detail-timeline></dd>
+                </div>
+                <div>
+                  <dt>Created</dt>
+                  <dd data-detail-created></dd>
+                </div>
+              </dl>
+
+              <div class="detail-section">
+                <h3>Customer idea</h3>
+                <p data-detail-description></p>
+              </div>
+
+              <div class="detail-section">
+                <h3>AI design possibilities</h3>
+                <p data-detail-possibilities></p>
+              </div>
+
+              <label class="notes-field">
+                <span>Internal notes</span>
+                <textarea data-detail-notes rows="6" placeholder="Add next action, quote notes, CAD notes, customer preferences..."></textarea>
+              </label>
+
+              <div class="detail-buttons">
+                <a class="button primary" data-detail-whatsapp href="#" target="_blank" rel="noreferrer">Open WhatsApp</a>
+                <button class="button ghost" type="button" data-delete>Archive</button>
+              </div>
+            </article>
+          </aside>
+        </section>
+
+        <section class="panel import-panel" id="import">
+          <div class="panel-heading">
+            <div>
+              <p class="eyebrow">Import</p>
+              <h2>Add a request manually</h2>
+            </div>
+          </div>
+          <div class="import-grid">
+            <label>
+              <span>Customer name</span>
+              <input data-new-name placeholder="Example: Aarav" />
+            </label>
+            <label>
+              <span>Phone or email</span>
+              <input data-new-contact placeholder="+91..." />
+            </label>
+            <label>
+              <span>Project type</span>
+              <select data-new-type>
+                <option>Personalized gift</option>
+                <option>Prototype or product part</option>
+                <option>Model or miniature</option>
+                <option>Repair or utility part</option>
+              </select>
+            </label>
+            <label>
+              <span>Estimate</span>
+              <input data-new-estimate placeholder="₹1,500 - ₹3,000" />
+            </label>
+            <label class="full-field">
+              <span>Idea / WhatsApp text</span>
+              <textarea data-new-description rows="5" placeholder="Paste the customer idea or WhatsApp request here."></textarea>
+            </label>
+            <button class="button primary" type="button" data-create-lead>Create request</button>
+          </div>
+        </section>
+      </main>
+    </div>
+
+    <script src="/admin.js" defer></script>
+  </body>
+</html>

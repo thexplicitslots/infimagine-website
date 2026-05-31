@@ -1,0 +1,306 @@
+const STORAGE_KEY = "infimagine_admin_leads_v1";
+
+const leadList = document.querySelector("[data-lead-list]");
+const searchInput = document.querySelector("[data-search]");
+const statusFilter = document.querySelector("[data-status-filter]");
+const exportButton = document.querySelector("[data-export]");
+const addLeadButton = document.querySelector("[data-add-lead]");
+const createLeadButton = document.querySelector("[data-create-lead]");
+const deleteButton = document.querySelector("[data-delete]");
+const emptyState = document.querySelector("[data-empty]");
+const detail = document.querySelector("[data-detail]");
+
+const detailFields = {
+  type: document.querySelector("[data-detail-type]"),
+  title: document.querySelector("[data-detail-title]"),
+  contact: document.querySelector("[data-detail-contact]"),
+  status: document.querySelector("[data-detail-status]"),
+  statusSelect: document.querySelector("[data-detail-status-select]"),
+  priority: document.querySelector("[data-detail-priority]"),
+  estimate: document.querySelector("[data-detail-estimate]"),
+  material: document.querySelector("[data-detail-material]"),
+  timeline: document.querySelector("[data-detail-timeline]"),
+  created: document.querySelector("[data-detail-created]"),
+  description: document.querySelector("[data-detail-description]"),
+  possibilities: document.querySelector("[data-detail-possibilities]"),
+  notes: document.querySelector("[data-detail-notes]"),
+  whatsapp: document.querySelector("[data-detail-whatsapp]"),
+};
+
+const newFields = {
+  name: document.querySelector("[data-new-name]"),
+  contact: document.querySelector("[data-new-contact]"),
+  type: document.querySelector("[data-new-type]"),
+  estimate: document.querySelector("[data-new-estimate]"),
+  description: document.querySelector("[data-new-description]"),
+};
+
+const sampleLeads = [
+  {
+    id: "lead-1001",
+    name: "Aarav Mehta",
+    contact: "+91 98765 43210",
+    type: "Prototype or product part",
+    status: "New",
+    priority: "High",
+    estimate: "₹2,499 - ₹5,499",
+    material: "PETG or Nylon",
+    timeline: "Within 1 week",
+    created: "2026-05-31T09:15:00.000Z",
+    description: "Compact phone stand with cable routing for a desk setup.",
+    possibilities:
+      "Rotating cradle, hidden cable channel, weighted base, matte black finish, initials on the rear face, and optional wireless charging puck recess.",
+    notes: "Ask for phone model and preferred viewing angle.",
+  },
+  {
+    id: "lead-1002",
+    name: "Nisha Rao",
+    contact: "nisha@example.com",
+    type: "Personalized gift",
+    status: "Contacted",
+    priority: "Normal",
+    estimate: "₹1,499 - ₹2,999",
+    material: "PLA",
+    timeline: "3-5 days",
+    created: "2026-05-30T13:35:00.000Z",
+    description: "Custom nameplate and miniature desk object for a birthday gift.",
+    possibilities:
+      "Layered name typography, metallic paint finish, tiny hidden message on base, modular color insert, and soft rounded premium display stand.",
+    notes: "Waiting for reference image and preferred color.",
+  },
+  {
+    id: "lead-1003",
+    name: "Kabir Studio",
+    contact: "+91 90000 11111",
+    type: "Model or miniature",
+    status: "Designing",
+    priority: "Normal",
+    estimate: "₹6,999 - ₹14,999",
+    material: "PLA or ABS/ASA",
+    timeline: "Flexible",
+    created: "2026-05-28T11:10:00.000Z",
+    description: "Architectural scale model for a boutique retail kiosk.",
+    possibilities:
+      "Removable roof, transparent insert zones, magnetic wall sections, engraved floor plan, and a clean display plinth with project branding.",
+    notes: "Prepare dimensions checklist before quote.",
+  },
+];
+
+let leads = loadLeads();
+let selectedId = leads[0]?.id || null;
+
+function loadLeads() {
+  const stored = localStorage.getItem(STORAGE_KEY);
+  if (!stored) {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(sampleLeads));
+    return sampleLeads;
+  }
+
+  try {
+    const parsed = JSON.parse(stored);
+    return Array.isArray(parsed) ? parsed : sampleLeads;
+  } catch {
+    return sampleLeads;
+  }
+}
+
+function saveLeads() {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(leads));
+}
+
+function formatDate(value) {
+  return new Intl.DateTimeFormat("en-IN", {
+    day: "2-digit",
+    month: "short",
+    hour: "2-digit",
+    minute: "2-digit",
+  }).format(new Date(value));
+}
+
+function numericEstimate(value) {
+  const numbers = String(value).match(/\d[\d,]*/g) || [];
+  return numbers.reduce((sum, item) => sum + Number(item.replace(/,/g, "")), 0) / Math.max(numbers.length, 1);
+}
+
+function statusClass(status) {
+  return `status-${String(status).replace(/\s+/g, "-")}`;
+}
+
+function escapeHtml(value) {
+  return String(value || "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
+}
+
+function filteredLeads() {
+  const query = searchInput.value.trim().toLowerCase();
+  const status = statusFilter.value;
+  return leads.filter((lead) => {
+    const matchesStatus = status === "all" || lead.status === status;
+    const text = [lead.name, lead.contact, lead.type, lead.status, lead.material, lead.description, lead.possibilities]
+      .join(" ")
+      .toLowerCase();
+    return matchesStatus && text.includes(query);
+  });
+}
+
+function renderMetrics() {
+  const open = leads.filter((lead) => !["Won", "Archived"].includes(lead.status));
+  const value = open.reduce((sum, lead) => sum + numericEstimate(lead.estimate), 0);
+
+  document.querySelector('[data-metric="open"]').textContent = open.length;
+  document.querySelector('[data-metric="new"]').textContent = leads.filter((lead) => lead.status === "New").length;
+  document.querySelector('[data-metric="progress"]').textContent = leads.filter((lead) =>
+    ["Contacted", "Designing", "Quoted"].includes(lead.status),
+  ).length;
+  document.querySelector('[data-metric="value"]').textContent = new Intl.NumberFormat("en-IN", {
+    style: "currency",
+    currency: "INR",
+    maximumFractionDigits: 0,
+  }).format(value);
+}
+
+function renderLeads() {
+  const visibleLeads = filteredLeads();
+  leadList.innerHTML = "";
+
+  if (!visibleLeads.length) {
+    leadList.innerHTML = '<div class="detail-empty"><p>No matching requests.</p></div>';
+    return;
+  }
+
+  visibleLeads.forEach((lead) => {
+    const button = document.createElement("button");
+    button.className = `lead-card ${lead.id === selectedId ? "is-active" : ""}`;
+    button.type = "button";
+    button.dataset.id = lead.id;
+    button.innerHTML = `
+      <div class="lead-top">
+        <strong>${escapeHtml(lead.name)}</strong>
+        <span class="status-pill ${statusClass(lead.status)}">${escapeHtml(lead.status)}</span>
+      </div>
+      <p>${escapeHtml(lead.description)}</p>
+      <div class="lead-meta">
+        <span class="meta-pill">${escapeHtml(lead.type)}</span>
+        <span class="meta-pill">${escapeHtml(lead.estimate)}</span>
+        <span class="meta-pill">${escapeHtml(formatDate(lead.created))}</span>
+      </div>
+    `;
+    leadList.append(button);
+  });
+}
+
+function selectedLead() {
+  return leads.find((lead) => lead.id === selectedId) || leads[0];
+}
+
+function renderDetail() {
+  const lead = selectedLead();
+  if (!lead) {
+    emptyState.hidden = false;
+    detail.hidden = true;
+    return;
+  }
+
+  selectedId = lead.id;
+  emptyState.hidden = true;
+  detail.hidden = false;
+  detailFields.type.textContent = lead.type;
+  detailFields.title.textContent = lead.name;
+  detailFields.contact.textContent = lead.contact;
+  detailFields.status.textContent = lead.status;
+  detailFields.status.className = `status-pill ${statusClass(lead.status)}`;
+  detailFields.statusSelect.value = lead.status;
+  detailFields.priority.value = lead.priority;
+  detailFields.estimate.textContent = lead.estimate;
+  detailFields.material.textContent = lead.material || "Not set";
+  detailFields.timeline.textContent = lead.timeline || "Not set";
+  detailFields.created.textContent = formatDate(lead.created);
+  detailFields.description.textContent = lead.description;
+  detailFields.possibilities.textContent = lead.possibilities || "No AI design possibilities saved yet.";
+  detailFields.notes.value = lead.notes || "";
+  detailFields.whatsapp.href = `https://wa.me/?text=${encodeURIComponent(
+    `Hi ${lead.name}, this is InfiMagine about your ${lead.type.toLowerCase()} request.`,
+  )}`;
+}
+
+function render() {
+  renderMetrics();
+  renderLeads();
+  renderDetail();
+}
+
+function updateSelected(updates) {
+  leads = leads.map((lead) => (lead.id === selectedId ? { ...lead, ...updates } : lead));
+  saveLeads();
+  render();
+}
+
+function createLead() {
+  const name = newFields.name.value.trim() || "New customer";
+  const description = newFields.description.value.trim() || "Customer wants a custom 3D printed object.";
+  const lead = {
+    id: `lead-${Date.now()}`,
+    name,
+    contact: newFields.contact.value.trim() || "Not specified",
+    type: newFields.type.value,
+    status: "New",
+    priority: "Normal",
+    estimate: newFields.estimate.value.trim() || "Not estimated",
+    material: "Recommend after review",
+    timeline: "Not set",
+    created: new Date().toISOString(),
+    description,
+    possibilities: "Use the AI Design Explorer from the quote flow, then paste the strongest ideas here.",
+    notes: "",
+  };
+
+  leads = [lead, ...leads];
+  selectedId = lead.id;
+  saveLeads();
+  Object.values(newFields).forEach((field) => {
+    if (field.tagName !== "SELECT") field.value = "";
+  });
+  render();
+}
+
+function exportCsv() {
+  const headers = ["Name", "Contact", "Type", "Status", "Priority", "Estimate", "Material", "Timeline", "Created", "Description", "Notes"];
+  const rows = leads.map((lead) =>
+    [lead.name, lead.contact, lead.type, lead.status, lead.priority, lead.estimate, lead.material, lead.timeline, lead.created, lead.description, lead.notes]
+      .map((value) => `"${String(value || "").replace(/"/g, '""')}"`)
+      .join(","),
+  );
+  const blob = new Blob([[headers.join(","), ...rows].join("\n")], { type: "text/csv;charset=utf-8" });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = `infimagine-requests-${new Date().toISOString().slice(0, 10)}.csv`;
+  link.click();
+  URL.revokeObjectURL(url);
+}
+
+leadList.addEventListener("click", (event) => {
+  const card = event.target.closest("[data-id]");
+  if (!card) return;
+  selectedId = card.dataset.id;
+  render();
+});
+
+searchInput.addEventListener("input", renderLeads);
+statusFilter.addEventListener("change", renderLeads);
+exportButton.addEventListener("click", exportCsv);
+addLeadButton.addEventListener("click", () => document.querySelector("#import").scrollIntoView({ behavior: "smooth" }));
+createLeadButton.addEventListener("click", createLead);
+detailFields.statusSelect.addEventListener("change", () => updateSelected({ status: detailFields.statusSelect.value }));
+detailFields.priority.addEventListener("change", () => updateSelected({ priority: detailFields.priority.value }));
+detailFields.notes.addEventListener("input", () => {
+  leads = leads.map((lead) => (lead.id === selectedId ? { ...lead, notes: detailFields.notes.value } : lead));
+  saveLeads();
+});
+deleteButton.addEventListener("click", () => updateSelected({ status: "Archived" }));
+
+render();
