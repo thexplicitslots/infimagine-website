@@ -14,6 +14,17 @@ const year = document.querySelector("[data-year]");
 const totalQuoteSteps = quoteGroups.length;
 let currentQuoteStep = 1;
 
+const revealTargets = [
+  ".statement-grid",
+  ".section-heading",
+  ".service-card",
+  ".showcase-item",
+  ".steps li",
+  ".estimate-copy",
+  ".quote-form",
+  ".contact-grid",
+].flatMap((selector) => [...document.querySelectorAll(selector)]);
+
 const priceRanges = {
   gift: { small: [799, 1499], medium: [1499, 2999], large: [2999, 5999] },
   prototype: { small: [999, 2499], medium: [2499, 5499], large: [5499, 11999] },
@@ -67,6 +78,32 @@ function formatCurrency(value) {
 
 function updateHeader() {
   header.classList.toggle("is-scrolled", window.scrollY > 16);
+}
+
+function initReveals() {
+  if (!("IntersectionObserver" in window)) {
+    revealTargets.forEach((element) => element.classList.add("is-visible"));
+    return;
+  }
+
+  revealTargets.forEach((element, index) => {
+    element.classList.add("reveal");
+    element.style.transitionDelay = `${Math.min(index % 4, 3) * 70}ms`;
+  });
+
+  const observer = new IntersectionObserver(
+    (entries) => {
+      entries.forEach((entry) => {
+        if (entry.isIntersecting) {
+          entry.target.classList.add("is-visible");
+          observer.unobserve(entry.target);
+        }
+      });
+    },
+    { threshold: 0.16 },
+  );
+
+  revealTargets.forEach((element) => observer.observe(element));
 }
 
 function fieldValue(data, name) {
@@ -223,4 +260,5 @@ aiHelperButton.addEventListener("click", refineWithAi);
 
 year.textContent = new Date().getFullYear();
 updateHeader();
+initReveals();
 updateQuoteStep(1);
