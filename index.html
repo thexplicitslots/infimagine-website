@@ -217,13 +217,27 @@
             <p class="eyebrow">Quick quote</p>
             <h2 id="estimate-title">Tell us what you want to make.</h2>
             <p>
-              Choose the closest fit and we’ll turn it into a proper quote.
-              Final pricing depends on design time, print size, material, finish,
-              and delivery.
+              Build a complete project brief before WhatsApp opens. The more
+              detail you share here, the faster we can confirm feasibility,
+              pricing, material, finish, and delivery.
             </p>
           </div>
 
           <form class="quote-form" id="quote-form">
+            <div class="form-group">
+              <p>Contact</p>
+              <label>
+                <span>Your name</span>
+                <input name="customerName" type="text" autocomplete="name" placeholder="Name" />
+              </label>
+              <label>
+                <span>Phone or email</span>
+                <input name="contactDetail" type="text" autocomplete="email" placeholder="How should we reply?" />
+              </label>
+            </div>
+
+            <div class="form-group">
+              <p>Project</p>
             <label>
               <span>Project type</span>
               <select name="projectType">
@@ -233,6 +247,15 @@
                 <option value="utility">Repair or utility part</option>
               </select>
             </label>
+              <label>
+                <span>Quantity</span>
+                <select name="quantity">
+                  <option value="1">1 piece</option>
+                  <option value="2-5">2-5 pieces</option>
+                  <option value="6-20">6-20 pieces</option>
+                  <option value="20+">20+ pieces</option>
+                </select>
+              </label>
             <label>
               <span>Approximate size</span>
               <select name="size">
@@ -241,6 +264,14 @@
                 <option value="large">Large or multi-part</option>
               </select>
             </label>
+              <label>
+                <span>Dimensions</span>
+                <input name="dimensions" type="text" placeholder="Example: 12 x 8 x 5 cm" />
+              </label>
+            </div>
+
+            <div class="form-group">
+              <p>Design file</p>
             <label>
               <span>Design readiness</span>
               <select name="readiness">
@@ -249,6 +280,29 @@
                 <option value="file">3D file ready</option>
               </select>
             </label>
+              <label>
+                <span>Reference / file link</span>
+                <input name="referenceLink" type="url" placeholder="Google Drive, Instagram, Pinterest, etc." />
+              </label>
+            </div>
+
+            <div class="form-group">
+              <p>Material and finish</p>
+              <label>
+                <span>Material preference</span>
+                <select name="material">
+                  <option value="recommend">Recommend the best material</option>
+                  <option value="pla">PLA - clean display prints</option>
+                  <option value="petg">PETG - stronger functional parts</option>
+                  <option value="abs">ABS/ASA - heat/weather resistant</option>
+                  <option value="resin">Resin - high detail miniatures</option>
+                  <option value="flexible">Flexible material</option>
+                </select>
+              </label>
+              <label>
+                <span>Color preference</span>
+                <input name="color" type="text" placeholder="Black, white, matte gray, custom..." />
+              </label>
             <label>
               <span>Finish</span>
               <select name="finish">
@@ -257,6 +311,58 @@
                 <option value="functional">Functional strength-focused</option>
               </select>
             </label>
+              <label>
+                <span>Strength priority</span>
+                <select name="strength">
+                  <option value="visual">Visual/display quality</option>
+                  <option value="balanced">Balanced look and strength</option>
+                  <option value="strong">Strong functional use</option>
+                  <option value="outdoor">Outdoor/heat resistance</option>
+                </select>
+              </label>
+            </div>
+
+            <div class="form-group">
+              <p>Timeline and delivery</p>
+              <label>
+                <span>Timeline</span>
+                <select name="timeline">
+                  <option value="flexible">Flexible</option>
+                  <option value="3-5 days">3-5 days</option>
+                  <option value="1 week">Within 1 week</option>
+                  <option value="urgent">Urgent</option>
+                </select>
+              </label>
+              <label>
+                <span>Budget range</span>
+                <select name="budget">
+                  <option value="not sure">Not sure yet</option>
+                  <option value="under 1000">Under ₹1,000</option>
+                  <option value="1000-3000">₹1,000 - ₹3,000</option>
+                  <option value="3000-7000">₹3,000 - ₹7,000</option>
+                  <option value="7000+">₹7,000+</option>
+                </select>
+              </label>
+              <label>
+                <span>Delivery preference</span>
+                <select name="delivery">
+                  <option value="pickup">Pickup</option>
+                  <option value="local delivery">Local delivery</option>
+                  <option value="shipping">Ship it to me</option>
+                  <option value="decide later">Decide later</option>
+                </select>
+              </label>
+              <label>
+                <span>Location</span>
+                <input name="location" type="text" placeholder="City / area" />
+              </label>
+            </div>
+
+            <label class="full-field">
+              <span>Describe your idea</span>
+              <textarea name="description" rows="4" placeholder="Tell us what it should do, how it should look, and anything important about size, use, or feel."></textarea>
+            </label>
+
             <div class="estimate-result" aria-live="polite">
               <span>Starting estimate</span>
               <strong data-estimate>₹799 - ₹1,499</strong>
