@@ -223,8 +223,33 @@
             </p>
           </div>
 
-          <form class="quote-form" id="quote-form">
-            <div class="form-group">
+          <form class="quote-form" id="quote-form" data-current-step="1">
+            <div class="quote-glow" aria-hidden="true"></div>
+            <div class="quote-progress" aria-label="Quote steps">
+              <button class="quote-step is-active" type="button" data-step-target="1">
+                <span>01</span>
+                Contact
+              </button>
+              <button class="quote-step" type="button" data-step-target="2">
+                <span>02</span>
+                Project
+              </button>
+              <button class="quote-step" type="button" data-step-target="3">
+                <span>03</span>
+                Design
+              </button>
+              <button class="quote-step" type="button" data-step-target="4">
+                <span>04</span>
+                Material
+              </button>
+              <button class="quote-step" type="button" data-step-target="5">
+                <span>05</span>
+                Delivery
+              </button>
+            </div>
+
+            <div class="quote-stage">
+            <div class="form-group is-active" data-step="1">
               <p>Contact</p>
               <label>
                 <span>Your name</span>
@@ -236,7 +261,7 @@
               </label>
             </div>
 
-            <div class="form-group">
+            <div class="form-group" data-step="2">
               <p>Project</p>
             <label>
               <span>Project type</span>
@@ -270,7 +295,7 @@
               </label>
             </div>
 
-            <div class="form-group">
+            <div class="form-group" data-step="3">
               <p>Design file</p>
             <label>
               <span>Design readiness</span>
@@ -286,7 +311,7 @@
               </label>
             </div>
 
-            <div class="form-group">
+            <div class="form-group" data-step="4">
               <p>Material and finish</p>
               <label>
                 <span>Material preference</span>
@@ -323,7 +348,7 @@
               </label>
             </div>
 
-            <div class="form-group">
+            <div class="form-group" data-step="5">
               <p>Timeline and delivery</p>
               <label>
                 <span>Timeline</span>
@@ -363,10 +388,15 @@
               <span>Describe your idea</span>
               <textarea name="description" rows="4" placeholder="Tell us what it should do, how it should look, and anything important about size, use, or feel."></textarea>
             </label>
+            </div>
 
             <div class="estimate-result" aria-live="polite">
-              <span>Starting estimate</span>
+              <span data-step-label>Step 1 of 5 · Starting estimate</span>
               <strong data-estimate>₹799 - ₹1,499</strong>
+            </div>
+            <div class="quote-nav">
+              <button class="button secondary" type="button" data-prev-step>Previous</button>
+              <button class="button primary" type="button" data-next-step>Continue</button>
             </div>
             <a class="button primary full" data-whatsapp href="https://wa.me/?text=Hi%20InfiMagine%2C%20I%20want%20to%20turn%20an%20idea%20into%20a%203D%20printed%20object.">
               Send project brief
