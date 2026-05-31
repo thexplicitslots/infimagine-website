@@ -1,4 +1,5 @@
-const OPENAI_ENDPOINT = "https://api.openai.com/v1/responses";
+const GEMINI_MODEL = process.env.GEMINI_MODEL || "gemini-2.5-flash";
+const GEMINI_ENDPOINT = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent`;
 
 function sendJson(response, statusCode, payload) {
   response.statusCode = statusCode;
@@ -57,30 +58,45 @@ module.exports = async function handler(request, response) {
     return sendJson(response, 405, { error: "Use POST for the AI design helper." });
   }
 
-  if (!process.env.OPENAI_API_KEY) {
+  if (!process.env.GEMINI_API_KEY) {
     return sendJson(response, 500, {
-      error: "AI helper needs OPENAI_API_KEY added in Vercel project environment variables.",
+      error: "AI helper needs GEMINI_API_KEY added in Vercel project environment variables.",
     });
   }
 
   try {
     const payload = typeof request.body === "string" ? JSON.parse(request.body || "{}") : request.body || {};
-    const aiResponse = await fetch(OPENAI_ENDPOINT, {
+    const aiResponse = await fetch(GEMINI_ENDPOINT, {
       method: "POST",
       headers: {
-        Authorization: `Bearer ${process.env.OPENAI_API_KEY}`,
+        "x-goog-api-key": process.env.GEMINI_API_KEY,
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: process.env.OPENAI_MODEL || "gpt-5.2",
-        instructions: [
-          "You are InfiMagine's AI Design Helper for custom 3D printing.",
-          "Turn customer ideas into concise, practical, premium project briefs.",
-          "Do not promise manufacturability. Flag assumptions and ask smart follow-up questions.",
-          "Recommend materials only from PLA, PETG, ABS/ASA, Nylon, PEEK, flexible, or 'recommend after review'.",
-          "Keep the answer under 220 words and format it with clear labels.",
-        ].join(" "),
-        input: buildPrompt(payload),
+        system_instruction: {
+          parts: [
+            {
+              text: [
+                "You are InfiMagine's AI Design Helper for custom 3D printing.",
+                "Turn customer ideas into concise, practical, premium project briefs.",
+                "Do not promise manufacturability. Flag assumptions and ask smart follow-up questions.",
+                "Recommend materials only from PLA, PETG, ABS/ASA, Nylon, PEEK, flexible, or 'recommend after review'.",
+                "Keep the answer under 220 words and format it with clear labels.",
+              ].join(" "),
+            },
+          ],
+        },
+        contents: [
+          {
+            role: "user",
+            parts: [{ text: buildPrompt(payload) }],
+          },
+        ],
+        generationConfig: {
+          temperature: 0.45,
+          topP: 0.9,
+          maxOutputTokens: 420,
+        },
       }),
     });
 
@@ -88,12 +104,12 @@ module.exports = async function handler(request, response) {
 
     if (!aiResponse.ok) {
       return sendJson(response, aiResponse.status, {
-        error: data.error?.message || "AI helper could not generate a brief right now.",
+        error: data.error?.message || "Gemini could not generate a brief right now.",
       });
     }
 
     return sendJson(response, 200, {
-      brief: data.output_text || fallbackText(payload),
+      brief: data.candidates?.[0]?.content?.parts?.map((part) => part.text || "").join("").trim() || fallbackText(payload),
     });
   } catch (error) {
     return sendJson(response, 500, {
