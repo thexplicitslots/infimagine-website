@@ -35,7 +35,8 @@ const materialAdders = {
   pla: [0, 0],
   petg: [250, 1200],
   abs: [450, 1800],
-  resin: [700, 2600],
+  nylon: [1200, 4200],
+  peek: [4500, 16000],
   flexible: [800, 2800],
 };
 
