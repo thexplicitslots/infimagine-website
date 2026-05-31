@@ -1,0 +1,103 @@
+const OPENAI_ENDPOINT = "https://api.openai.com/v1/responses";
+
+function sendJson(response, statusCode, payload) {
+  response.statusCode = statusCode;
+  response.setHeader("Content-Type", "application/json");
+  response.end(JSON.stringify(payload));
+}
+
+function cleanText(value) {
+  return String(value || "").replace(/\s+/g, " ").trim().slice(0, 900);
+}
+
+function buildPrompt(payload) {
+  const lines = [
+    `Project type: ${cleanText(payload.projectType)}`,
+    `Quantity: ${cleanText(payload.quantity)}`,
+    `Approximate size: ${cleanText(payload.size)}`,
+    `Dimensions: ${cleanText(payload.dimensions)}`,
+    `Design readiness: ${cleanText(payload.readiness)}`,
+    `Reference link: ${cleanText(payload.referenceLink)}`,
+    `Material preference: ${cleanText(payload.material)}`,
+    `Color: ${cleanText(payload.color)}`,
+    `Finish: ${cleanText(payload.finish)}`,
+    `Strength priority: ${cleanText(payload.strength)}`,
+    `Timeline: ${cleanText(payload.timeline)}`,
+    `Budget: ${cleanText(payload.budget)}`,
+    `Delivery: ${cleanText(payload.delivery)}`,
+    `Location: ${cleanText(payload.location)}`,
+    `Customer idea: ${cleanText(payload.description)}`,
+  ];
+
+  return `Create a premium, practical 3D-printing design brief for InfiMagine from these customer inputs:\n${lines.join("\n")}`;
+}
+
+function fallbackText(payload) {
+  return [
+    "Refined project brief:",
+    cleanText(payload.description) || "Customer wants a custom 3D printed object.",
+    "",
+    "Recommended direction:",
+    `Use ${cleanText(payload.material)} with a ${cleanText(payload.finish).toLowerCase()} approach. Prioritize ${cleanText(payload.strength).toLowerCase()}.`,
+    "",
+    "Feasibility notes:",
+    "- Confirm final dimensions and wall thickness before printing.",
+    "- Share reference images or a CAD file if available.",
+    "- For functional parts, confirm load, heat, and outdoor exposure requirements.",
+    "",
+    "Questions before production:",
+    "1. What exact dimensions and tolerances are required?",
+    "2. Is this for display, daily use, load-bearing use, or outdoor use?",
+    "3. Should the finish be raw printed, sanded, painted, or premium smooth?",
+  ].join("\n");
+}
+
+module.exports = async function handler(request, response) {
+  if (request.method !== "POST") {
+    return sendJson(response, 405, { error: "Use POST for the AI design helper." });
+  }
+
+  if (!process.env.OPENAI_API_KEY) {
+    return sendJson(response, 500, {
+      error: "AI helper needs OPENAI_API_KEY added in Vercel project environment variables.",
+    });
+  }
+
+  try {
+    const payload = typeof request.body === "string" ? JSON.parse(request.body || "{}") : request.body || {};
+    const aiResponse = await fetch(OPENAI_ENDPOINT, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${process.env.OPENAI_API_KEY}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        model: process.env.OPENAI_MODEL || "gpt-5.2",
+        instructions: [
+          "You are InfiMagine's AI Design Helper for custom 3D printing.",
+          "Turn customer ideas into concise, practical, premium project briefs.",
+          "Do not promise manufacturability. Flag assumptions and ask smart follow-up questions.",
+          "Recommend materials only from PLA, PETG, ABS/ASA, Nylon, PEEK, flexible, or 'recommend after review'.",
+          "Keep the answer under 220 words and format it with clear labels.",
+        ].join(" "),
+        input: buildPrompt(payload),
+      }),
+    });
+
+    const data = await aiResponse.json();
+
+    if (!aiResponse.ok) {
+      return sendJson(response, aiResponse.status, {
+        error: data.error?.message || "AI helper could not generate a brief right now.",
+      });
+    }
+
+    return sendJson(response, 200, {
+      brief: data.output_text || fallbackText(payload),
+    });
+  } catch (error) {
+    return sendJson(response, 500, {
+      error: "AI helper had trouble refining the idea. Please try again.",
+    });
+  }
+};

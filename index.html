@@ -309,6 +309,22 @@
                 <span>Reference / file link</span>
                 <input name="referenceLink" type="url" placeholder="Google Drive, Instagram, Pinterest, etc." />
               </label>
+              <label class="full-field">
+                <span>Describe your idea</span>
+                <textarea name="description" rows="4" placeholder="Tell us what it should do, how it should look, and anything important about size, use, or feel."></textarea>
+              </label>
+              <div class="ai-helper">
+                <div>
+                  <span>AI Design Helper</span>
+                  <p>Refine the idea into a clearer print brief with material guidance, feasibility notes, and smart questions.</p>
+                </div>
+                <button class="button secondary" type="button" data-ai-helper>Refine with AI</button>
+              </div>
+              <label class="full-field ai-output-field">
+                <span>AI refined brief</span>
+                <textarea name="aiBrief" rows="7" data-ai-output placeholder="Your AI-refined 3D printing brief will appear here. You can edit it before sending."></textarea>
+              </label>
+              <p class="ai-status" data-ai-status aria-live="polite"></p>
             </div>
 
             <div class="form-group" data-step="4">
@@ -383,11 +399,6 @@
                 <input name="location" type="text" placeholder="City / area" />
               </label>
             </div>
-
-            <label class="full-field">
-              <span>Describe your idea</span>
-              <textarea name="description" rows="4" placeholder="Tell us what it should do, how it should look, and anything important about size, use, or feel."></textarea>
-            </label>
             </div>
 
             <div class="estimate-result" aria-live="polite">

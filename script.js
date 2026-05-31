@@ -7,6 +7,9 @@ const quoteGroups = [...document.querySelectorAll("[data-step]")];
 const quoteSteps = [...document.querySelectorAll("[data-step-target]")];
 const prevStepButton = document.querySelector("[data-prev-step]");
 const nextStepButton = document.querySelector("[data-next-step]");
+const aiHelperButton = document.querySelector("[data-ai-helper]");
+const aiOutput = document.querySelector("[data-ai-output]");
+const aiStatus = document.querySelector("[data-ai-status]");
 const year = document.querySelector("[data-year]");
 const totalQuoteSteps = quoteGroups.length;
 let currentQuoteStep = 1;
@@ -66,6 +69,16 @@ function updateHeader() {
   header.classList.toggle("is-scrolled", window.scrollY > 16);
 }
 
+function fieldValue(data, name) {
+  return data.get(name)?.trim() || "Not specified";
+}
+
+function selectedLabel(name, data = new FormData(form)) {
+  const value = data.get(name);
+  const option = form.querySelector(`[name="${name}"] option[value="${CSS.escape(value)}"]`);
+  return option?.textContent.trim() || value || "Not specified";
+}
+
 function updateEstimate() {
   const data = new FormData(form);
   const projectType = data.get("projectType");
@@ -88,41 +101,38 @@ function updateEstimate() {
   estimate.textContent = `${formatCurrency(low)} - ${formatCurrency(high)}`;
   quoteStepLabel.textContent = `Step ${currentQuoteStep} of ${totalQuoteSteps} · Starting estimate`;
 
-  const fieldValue = (name) => data.get(name)?.trim() || "Not specified";
-  const selectedLabel = (name) => {
-    const value = data.get(name);
-    const option = form.querySelector(`[name="${name}"] option[value="${CSS.escape(value)}"]`);
-    return option?.textContent.trim() || value || "Not specified";
-  };
   const brief = [
     "Hi InfiMagine, I want a quote for a custom 3D print.",
     "",
     "Contact",
-    `Name: ${fieldValue("customerName")}`,
-    `Phone/email: ${fieldValue("contactDetail")}`,
+    `Name: ${fieldValue(data, "customerName")}`,
+    `Phone/email: ${fieldValue(data, "contactDetail")}`,
     "",
     "Project details",
-    `Type: ${selectedLabel("projectType")}`,
-    `Quantity: ${selectedLabel("quantity")}`,
-    `Approx size: ${selectedLabel("size")}`,
-    `Dimensions: ${fieldValue("dimensions")}`,
-    `Design readiness: ${selectedLabel("readiness")}`,
-    `Reference/file link: ${fieldValue("referenceLink")}`,
+    `Type: ${selectedLabel("projectType", data)}`,
+    `Quantity: ${selectedLabel("quantity", data)}`,
+    `Approx size: ${selectedLabel("size", data)}`,
+    `Dimensions: ${fieldValue(data, "dimensions")}`,
+    `Design readiness: ${selectedLabel("readiness", data)}`,
+    `Reference/file link: ${fieldValue(data, "referenceLink")}`,
     "",
     "Material and finish",
-    `Material: ${selectedLabel("material")}`,
-    `Color: ${fieldValue("color")}`,
-    `Finish: ${selectedLabel("finish")}`,
-    `Strength priority: ${selectedLabel("strength")}`,
+    `Material: ${selectedLabel("material", data)}`,
+    `Color: ${fieldValue(data, "color")}`,
+    `Finish: ${selectedLabel("finish", data)}`,
+    `Strength priority: ${selectedLabel("strength", data)}`,
     "",
     "Timeline and delivery",
-    `Timeline: ${selectedLabel("timeline")}`,
-    `Budget: ${selectedLabel("budget")}`,
-    `Delivery: ${selectedLabel("delivery")}`,
-    `Location: ${fieldValue("location")}`,
+    `Timeline: ${selectedLabel("timeline", data)}`,
+    `Budget: ${selectedLabel("budget", data)}`,
+    `Delivery: ${selectedLabel("delivery", data)}`,
+    `Location: ${fieldValue(data, "location")}`,
     "",
     "Idea description",
-    fieldValue("description"),
+    fieldValue(data, "description"),
+    "",
+    "AI refined brief",
+    fieldValue(data, "aiBrief"),
     "",
     `Website estimate: ${formatCurrency(low)} - ${formatCurrency(high)}`,
   ].join("\n");
@@ -152,6 +162,55 @@ function updateQuoteStep(step) {
   updateEstimate();
 }
 
+function collectAiPayload() {
+  const data = new FormData(form);
+  return {
+    projectType: selectedLabel("projectType", data),
+    quantity: selectedLabel("quantity", data),
+    size: selectedLabel("size", data),
+    dimensions: fieldValue(data, "dimensions"),
+    readiness: selectedLabel("readiness", data),
+    referenceLink: fieldValue(data, "referenceLink"),
+    material: selectedLabel("material", data),
+    color: fieldValue(data, "color"),
+    finish: selectedLabel("finish", data),
+    strength: selectedLabel("strength", data),
+    timeline: selectedLabel("timeline", data),
+    budget: selectedLabel("budget", data),
+    delivery: selectedLabel("delivery", data),
+    location: fieldValue(data, "location"),
+    description: fieldValue(data, "description"),
+  };
+}
+
+async function refineWithAi() {
+  aiStatus.textContent = "Refining your idea into a print-ready brief...";
+  aiHelperButton.disabled = true;
+  form.classList.add("is-thinking");
+
+  try {
+    const response = await fetch("/api/design-helper", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(collectAiPayload()),
+    });
+    const result = await response.json();
+
+    if (!response.ok) {
+      throw new Error(result.error || "AI helper is unavailable right now.");
+    }
+
+    aiOutput.value = result.brief;
+    aiStatus.textContent = "AI brief ready. You can edit it before sending.";
+    updateEstimate();
+  } catch (error) {
+    aiStatus.textContent = error.message;
+  } finally {
+    aiHelperButton.disabled = false;
+    form.classList.remove("is-thinking");
+  }
+}
+
 window.addEventListener("scroll", updateHeader, { passive: true });
 form.addEventListener("input", updateEstimate);
 form.addEventListener("change", updateEstimate);
@@ -160,6 +219,7 @@ nextStepButton.addEventListener("click", () => updateQuoteStep(currentQuoteStep 
 quoteSteps.forEach((button) => {
   button.addEventListener("click", () => updateQuoteStep(Number(button.dataset.stepTarget)));
 });
+aiHelperButton.addEventListener("click", refineWithAi);
 
 year.textContent = new Date().getFullYear();
 updateHeader();
