@@ -81,6 +81,7 @@ module.exports = async function handler(request, response) {
                 "Turn customer ideas into concise, practical, premium project briefs.",
                 "Do not promise manufacturability. Flag assumptions and ask smart follow-up questions.",
                 "Recommend materials only from PLA, PETG, ABS/ASA, Nylon, PEEK, flexible, or 'recommend after review'.",
+                "Use plain text labels instead of Markdown bold.",
                 "Keep the answer under 220 words and format it with clear labels.",
               ].join(" "),
             },
@@ -95,7 +96,10 @@ module.exports = async function handler(request, response) {
         generationConfig: {
           temperature: 0.45,
           topP: 0.9,
-          maxOutputTokens: 420,
+          maxOutputTokens: 900,
+          thinkingConfig: {
+            thinkingBudget: 0,
+          },
         },
       }),
     });
