@@ -1,4 +1,6 @@
 const header = document.querySelector("[data-header]");
+const menuToggle = document.querySelector("[data-menu-toggle]");
+const mobileMenu = document.querySelector("[data-mobile-menu]");
 const form = document.querySelector("#quote-form");
 const estimate = document.querySelector("[data-estimate]");
 const whatsapp = document.querySelector("[data-whatsapp]");
@@ -80,6 +82,12 @@ function formatCurrency(value) {
 
 function updateHeader() {
   header.classList.toggle("is-scrolled", window.scrollY > 16);
+}
+
+function setMobileMenu(open) {
+  mobileMenu.hidden = !open;
+  header.classList.toggle("is-menu-open", open);
+  menuToggle.setAttribute("aria-expanded", String(open));
 }
 
 function initReveals() {
@@ -258,6 +266,19 @@ async function refineWithAi() {
 }
 
 window.addEventListener("scroll", updateHeader, { passive: true });
+menuToggle.addEventListener("click", () => {
+  setMobileMenu(!header.classList.contains("is-menu-open"));
+});
+mobileMenu.addEventListener("click", (event) => {
+  if (event.target.closest("a")) {
+    setMobileMenu(false);
+  }
+});
+window.addEventListener("keydown", (event) => {
+  if (event.key === "Escape") {
+    setMobileMenu(false);
+  }
+});
 form.addEventListener("input", updateEstimate);
 form.addEventListener("change", updateEstimate);
 prevStepButton.addEventListener("click", () => updateQuoteStep(currentQuoteStep - 1));
