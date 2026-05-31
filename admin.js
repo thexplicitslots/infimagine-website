@@ -1,6 +1,7 @@
 const STORAGE_KEY = "infimagine_admin_leads_v1";
 
 const leadList = document.querySelector("[data-lead-list]");
+const pipelineBoard = document.querySelector("[data-pipeline-board]");
 const searchInput = document.querySelector("[data-search]");
 const statusFilter = document.querySelector("[data-status-filter]");
 const exportButton = document.querySelector("[data-export]");
@@ -88,6 +89,7 @@ const sampleLeads = [
 
 let leads = loadLeads();
 let selectedId = leads[0]?.id || null;
+const pipelineStatuses = ["New", "Contacted", "Designing", "Quoted", "Won"];
 
 function loadLeads() {
   const stored = localStorage.getItem(STORAGE_KEY);
@@ -193,6 +195,44 @@ function renderLeads() {
   });
 }
 
+function renderPipeline() {
+  pipelineBoard.innerHTML = "";
+
+  pipelineStatuses.forEach((status) => {
+    const statusLeads = leads.filter((lead) => lead.status === status);
+    const column = document.createElement("article");
+    column.className = "pipeline-column";
+    column.innerHTML = `
+      <div class="pipeline-heading">
+        <span>${escapeHtml(status)}</span>
+        <strong>${statusLeads.length}</strong>
+      </div>
+      <div class="pipeline-items"></div>
+    `;
+
+    const items = column.querySelector(".pipeline-items");
+
+    if (!statusLeads.length) {
+      items.innerHTML = '<p class="pipeline-empty">No requests</p>';
+    } else {
+      statusLeads.forEach((lead) => {
+        const item = document.createElement("button");
+        item.className = "pipeline-card";
+        item.type = "button";
+        item.dataset.id = lead.id;
+        item.innerHTML = `
+          <strong>${escapeHtml(lead.name)}</strong>
+          <span>${escapeHtml(lead.type)}</span>
+          <small>${escapeHtml(lead.estimate)}</small>
+        `;
+        items.append(item);
+      });
+    }
+
+    pipelineBoard.append(column);
+  });
+}
+
 function selectedLead() {
   return leads.find((lead) => lead.id === selectedId) || leads[0];
 }
@@ -230,6 +270,7 @@ function renderDetail() {
 function render() {
   renderMetrics();
   renderLeads();
+  renderPipeline();
   renderDetail();
 }
 
@@ -287,6 +328,14 @@ leadList.addEventListener("click", (event) => {
   const card = event.target.closest("[data-id]");
   if (!card) return;
   selectedId = card.dataset.id;
+  render();
+});
+
+pipelineBoard.addEventListener("click", (event) => {
+  const card = event.target.closest("[data-id]");
+  if (!card) return;
+  selectedId = card.dataset.id;
+  document.querySelector("#requests").scrollIntoView({ behavior: "smooth", block: "start" });
   render();
 });
 
