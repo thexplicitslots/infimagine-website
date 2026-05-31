@@ -14,7 +14,6 @@ function cleanText(value) {
 function buildPrompt(payload) {
   const lines = [
     `Project type: ${cleanText(payload.projectType)}`,
-    `Quantity: ${cleanText(payload.quantity)}`,
     `Approximate size: ${cleanText(payload.size)}`,
     `Dimensions: ${cleanText(payload.dimensions)}`,
     `Design readiness: ${cleanText(payload.readiness)}`,
@@ -23,33 +22,26 @@ function buildPrompt(payload) {
     `Color: ${cleanText(payload.color)}`,
     `Finish: ${cleanText(payload.finish)}`,
     `Strength priority: ${cleanText(payload.strength)}`,
-    `Timeline: ${cleanText(payload.timeline)}`,
-    `Budget: ${cleanText(payload.budget)}`,
-    `Delivery: ${cleanText(payload.delivery)}`,
-    `Location: ${cleanText(payload.location)}`,
     `Customer idea: ${cleanText(payload.description)}`,
   ];
 
-  return `Create a premium, practical 3D-printing design brief for InfiMagine from these customer inputs:\n${lines.join("\n")}`;
+  return `Expand the design possibilities for this custom 3D printing idea. Focus only on creative and functional ways the object could be improved, styled, personalized, or made more useful:\n${lines.join("\n")}`;
 }
 
 function fallbackText(payload) {
   return [
-    "Refined project brief:",
-    cleanText(payload.description) || "Customer wants a custom 3D printed object.",
+    "Design possibilities:",
+    `Start with: ${cleanText(payload.description) || "a custom 3D printed object."}`,
     "",
-    "Recommended direction:",
-    `Use ${cleanText(payload.material)} with a ${cleanText(payload.finish).toLowerCase()} approach. Prioritize ${cleanText(payload.strength).toLowerCase()}.`,
+    "Ways to make it better:",
+    "- Add rounded edges, cleaner proportions, and a more premium silhouette.",
+    "- Consider personalization such as initials, logo details, pattern texture, or modular inserts.",
+    "- Add functional touches such as cable channels, hidden slots, grip pads, clips, hinges, or magnetic areas if useful.",
     "",
-    "Feasibility notes:",
-    "- Confirm final dimensions and wall thickness before printing.",
-    "- Share reference images or a CAD file if available.",
-    "- For functional parts, confirm load, heat, and outdoor exposure requirements.",
-    "",
-    "Questions before production:",
-    "1. What exact dimensions and tolerances are required?",
-    "2. Is this for display, daily use, load-bearing use, or outdoor use?",
-    "3. Should the finish be raw printed, sanded, painted, or premium smooth?",
+    "Style directions:",
+    "- Minimal and matte.",
+    "- Futuristic with fine-line geometric details.",
+    "- Smooth premium object with subtle contrast accents.",
   ].join("\n");
 }
 
@@ -77,12 +69,14 @@ module.exports = async function handler(request, response) {
           parts: [
             {
               text: [
-                "You are InfiMagine's AI Design Helper for custom 3D printing.",
-                "Turn customer ideas into concise, practical, premium project briefs.",
-                "Do not promise manufacturability. Flag assumptions and ask smart follow-up questions.",
-                "Recommend materials only from PLA, PETG, ABS/ASA, Nylon, PEEK, flexible, or 'recommend after review'.",
+                "You are InfiMagine's AI Design Possibility Helper for custom 3D printing.",
+                "Your only job is to help the customer imagine better versions of their object.",
+                "Suggest creative design directions, useful features, personalization ideas, aesthetic styles, shape improvements, and optional enhancements.",
+                "Do not write a project brief. Do not include quantity, pricing, budget, timeline, delivery, location, manufacturability, production warnings, or business/admin details.",
+                "Do not ask follow-up questions unless they directly unlock design possibilities.",
+                "Mention materials only as design/feel possibilities, not as engineering approval.",
                 "Use plain text labels instead of Markdown bold.",
-                "Keep the answer under 220 words and format it with clear labels.",
+                "Keep the answer under 180 words and format it with clear labels.",
               ].join(" "),
             },
           ],

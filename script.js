@@ -178,7 +178,7 @@ function updateEstimate() {
     "Idea description",
     fieldValue(data, "description"),
     "",
-    "AI refined brief",
+    "AI design possibilities",
     fieldValue(data, "aiBrief"),
     "",
     `Website estimate: ${formatCurrency(low)} - ${formatCurrency(high)}`,
@@ -238,7 +238,7 @@ function collectAiPayload() {
 }
 
 async function refineWithAi() {
-  aiStatus.textContent = "Refining your idea into a print-ready brief...";
+  aiStatus.textContent = "Exploring design possibilities for your idea...";
   aiHelperButton.disabled = true;
   form.classList.add("is-thinking");
 
@@ -255,7 +255,7 @@ async function refineWithAi() {
     }
 
     aiOutput.value = result.brief;
-    aiStatus.textContent = "AI brief ready. You can edit it before sending.";
+    aiStatus.textContent = "Design possibilities ready. You can edit them before sending.";
     updateEstimate();
   } catch (error) {
     aiStatus.textContent = error.message;
