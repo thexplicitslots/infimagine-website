@@ -1,7 +1,7 @@
 const fs = require("fs");
 const path = require("path");
 
-const adminHtml = fs.readFileSync(path.join(process.cwd(), "admin.html"), "utf8");
+const adminHtml = fs.readFileSync(path.join(__dirname, "admin-template.html"), "utf8");
 
 function timingSafeEqualString(left, right) {
   const leftBuffer = Buffer.from(String(left || ""));
