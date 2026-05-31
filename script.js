@@ -14,16 +14,18 @@ const year = document.querySelector("[data-year]");
 const totalQuoteSteps = quoteGroups.length;
 let currentQuoteStep = 1;
 
-const revealTargets = [
+const revealTargets = [...new Set([
   ".statement-grid",
   ".section-heading",
   ".service-card",
   ".showcase-item",
+  ".preview-copy",
+  ".product-preview",
   ".steps li",
   ".estimate-copy",
   ".quote-form",
   ".contact-grid",
-].flatMap((selector) => [...document.querySelectorAll(selector)]);
+].flatMap((selector) => [...document.querySelectorAll(selector)]))];
 
 const priceRanges = {
   gift: { small: [799, 1499], medium: [1499, 2999], large: [2999, 5999] },
@@ -193,6 +195,13 @@ function updateQuoteStep(step) {
     button.classList.toggle("is-active", isActive);
     button.classList.toggle("is-complete", stepNumber < currentQuoteStep);
     button.setAttribute("aria-current", isActive ? "step" : "false");
+
+    if (isActive) {
+      button.classList.remove("is-gliding");
+      window.requestAnimationFrame(() => button.classList.add("is-gliding"));
+    } else {
+      button.classList.remove("is-gliding");
+    }
   });
 
   nextStepButton.textContent = currentQuoteStep === totalQuoteSteps ? "Review brief" : "Continue";
