@@ -353,6 +353,17 @@
                 <span>Reference / file link</span>
                 <input name="referenceLink" type="url" placeholder="Google Drive, Instagram, Pinterest, etc." />
               </label>
+              <label class="full-field upload-field">
+                <span>Upload files</span>
+                <input
+                  name="attachments"
+                  type="file"
+                  multiple
+                  accept="image/*,.stl,.obj,.step,.stp,.3mf,.pdf"
+                  data-file-input
+                />
+                <small data-file-summary>Sketches, screenshots, reference images, STL, OBJ, STEP, STP, 3MF, or PDF.</small>
+              </label>
               <label class="full-field">
                 <span>Describe your idea</span>
                 <textarea name="description" rows="4" placeholder="Tell us what it should do, how it should look, and anything important about size, use, or feel."></textarea>

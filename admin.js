@@ -27,6 +27,7 @@ const detailFields = {
   created: document.querySelector("[data-detail-created]"),
   description: document.querySelector("[data-detail-description]"),
   possibilities: document.querySelector("[data-detail-possibilities]"),
+  attachments: document.querySelector("[data-detail-attachments]"),
   notes: document.querySelector("[data-detail-notes]"),
   whatsapp: document.querySelector("[data-detail-whatsapp]"),
 };
@@ -59,6 +60,9 @@ const sampleLeads = [
     description: "Compact phone stand with cable routing for a desk setup.",
     possibilities:
       "Rotating cradle, hidden cable channel, weighted base, matte black finish, initials on the rear face, and optional wireless charging puck recess.",
+    attachments: [
+      { name: "desk-stand-sketch.jpg", size: 840000, type: "image/jpeg", stored: false },
+    ],
     notes: "Ask for phone model and preferred viewing angle.",
   },
   {
@@ -77,6 +81,7 @@ const sampleLeads = [
     description: "Custom nameplate and miniature desk object for a birthday gift.",
     possibilities:
       "Layered name typography, metallic paint finish, tiny hidden message on base, modular color insert, and soft rounded premium display stand.",
+    attachments: [],
     notes: "Waiting for reference image and preferred color.",
   },
   {
@@ -95,6 +100,9 @@ const sampleLeads = [
     description: "Architectural scale model for a boutique retail kiosk.",
     possibilities:
       "Removable roof, transparent insert zones, magnetic wall sections, engraved floor plan, and a clean display plinth with project branding.",
+    attachments: [
+      { name: "kiosk-reference.pdf", size: 1240000, type: "application/pdf", stored: false },
+    ],
     notes: "Prepare dimensions checklist before quote.",
   },
 ];
@@ -165,6 +173,18 @@ function numericEstimate(value) {
   return numbers.reduce((sum, item) => sum + Number(item.replace(/,/g, "")), 0) / Math.max(numbers.length, 1);
 }
 
+function formatBytes(bytes) {
+  if (!bytes) return "0 KB";
+  const units = ["B", "KB", "MB", "GB"];
+  let value = Number(bytes) || 0;
+  let index = 0;
+  while (value >= 1024 && index < units.length - 1) {
+    value /= 1024;
+    index += 1;
+  }
+  return `${value.toFixed(value >= 10 || index === 0 ? 0 : 1)} ${units[index]}`;
+}
+
 function statusClass(status) {
   return `status-${String(status).replace(/\s+/g, "-")}`;
 }
@@ -183,7 +203,8 @@ function filteredLeads() {
   const status = statusFilter.value;
   return leads.filter((lead) => {
     const matchesStatus = status === "all" || lead.status === status;
-    const text = [lead.name, lead.contact, lead.type, lead.status, lead.material, lead.finish, lead.description, lead.possibilities]
+    const attachmentText = (lead.attachments || []).map((file) => `${file.name} ${file.type}`).join(" ");
+    const text = [lead.name, lead.contact, lead.type, lead.status, lead.material, lead.finish, lead.description, lead.possibilities, attachmentText]
       .join(" ")
       .toLowerCase();
     return matchesStatus && text.includes(query);
@@ -230,6 +251,7 @@ function renderLeads() {
         <span class="meta-pill">${escapeHtml(lead.contact)}</span>
         <span class="meta-pill">${escapeHtml(lead.type)}</span>
         <span class="meta-pill">${escapeHtml(lead.estimate)}</span>
+        <span class="meta-pill">${(lead.attachments || []).length} files</span>
         <span class="meta-pill">Follow-up: ${escapeHtml(formatDateOnly(lead.followUpDate))}</span>
         <span class="meta-pill">${escapeHtml(formatDate(lead.created))}</span>
       </div>
@@ -308,10 +330,45 @@ function renderDetail() {
   detailFields.created.textContent = formatDate(lead.created);
   detailFields.description.textContent = lead.description;
   detailFields.possibilities.textContent = lead.possibilities || "No AI design possibilities saved yet.";
+  renderAttachments(lead.attachments || []);
   detailFields.notes.value = lead.notes || "";
   detailFields.whatsapp.href = `https://wa.me/?text=${encodeURIComponent(
     `Hi ${lead.name}, this is InfiMagine about your ${lead.type.toLowerCase()} request.`,
   )}`;
+}
+
+function renderAttachments(attachments) {
+  if (!attachments.length) {
+    detailFields.attachments.innerHTML = '<p class="attachment-empty">No uploaded files for this request.</p>';
+    return;
+  }
+
+  detailFields.attachments.innerHTML = attachments
+    .map((file) => {
+      const name = escapeHtml(file.name || "Attachment");
+      const meta = escapeHtml([file.type, file.size ? formatBytes(file.size) : ""].filter(Boolean).join(" · "));
+      const href = file.url ? escapeHtml(file.url) : "";
+      const label = file.stored ? "Uploaded" : "Captured";
+
+      if (href) {
+        return `
+          <a class="attachment-link" href="${href}" target="_blank" rel="noreferrer">
+            <strong>${name}</strong>
+            <span>${meta}</span>
+            <em>${label}</em>
+          </a>
+        `;
+      }
+
+      return `
+        <div class="attachment-link is-static">
+          <strong>${name}</strong>
+          <span>${meta}</span>
+          <em>${label}</em>
+        </div>
+      `;
+    })
+    .join("");
 }
 
 function render() {
@@ -353,6 +410,7 @@ function createLead() {
     created: new Date().toISOString(),
     description,
     possibilities: "Use the AI Design Explorer from the quote flow, then paste the strongest ideas here.",
+    attachments: [],
     notes: "",
   };
 
@@ -366,7 +424,7 @@ function createLead() {
 }
 
 function exportCsv() {
-  const headers = ["Name", "Contact", "Type", "Status", "Priority", "Estimate", "Material", "Finish", "Timeline", "Follow-up", "Created", "Description", "AI Possibilities", "Notes"];
+  const headers = ["Name", "Contact", "Type", "Status", "Priority", "Estimate", "Material", "Finish", "Timeline", "Follow-up", "Created", "Description", "AI Possibilities", "Attachments", "Notes"];
   const rows = leads.map((lead) =>
     [
       lead.name,
@@ -382,6 +440,7 @@ function exportCsv() {
       lead.created,
       lead.description,
       lead.possibilities,
+      (lead.attachments || []).map((file) => file.url || file.path || file.name).join(" | "),
       lead.notes,
     ]
       .map((value) => `"${String(value || "").replace(/"/g, '""')}"`)

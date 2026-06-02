@@ -13,10 +13,16 @@ const nextStepButton = document.querySelector("[data-next-step]");
 const aiHelperButton = document.querySelector("[data-ai-helper]");
 const aiOutput = document.querySelector("[data-ai-output]");
 const aiStatus = document.querySelector("[data-ai-status]");
+const fileInput = document.querySelector("[data-file-input]");
+const fileSummary = document.querySelector("[data-file-summary]");
 const year = document.querySelector("[data-year]");
 const totalQuoteSteps = quoteGroups.length;
 let currentQuoteStep = 1;
 let currentEstimateRange = "₹799 - ₹1,499";
+let currentAttachments = [];
+const maxUploadFiles = 4;
+const maxUploadBytes = 4 * 1024 * 1024;
+const maxUploadTotalBytes = 8 * 1024 * 1024;
 
 const revealTargets = [...new Set([
   ".statement-grid",
@@ -128,6 +134,119 @@ function selectedLabel(name, data = new FormData(form)) {
   return option?.textContent.trim() || value || "Not specified";
 }
 
+function formatBytes(bytes) {
+  if (!bytes) return "0 KB";
+  const units = ["B", "KB", "MB", "GB"];
+  let value = bytes;
+  let index = 0;
+  while (value >= 1024 && index < units.length - 1) {
+    value /= 1024;
+    index += 1;
+  }
+  return `${value.toFixed(value >= 10 || index === 0 ? 0 : 1)} ${units[index]}`;
+}
+
+function selectedFiles() {
+  return fileInput ? [...fileInput.files].slice(0, maxUploadFiles) : [];
+}
+
+function attachmentLines(attachments = currentAttachments) {
+  if (!attachments.length) return ["Files: Not uploaded"];
+  return [
+    "Files",
+    ...attachments.map((file) => {
+      const size = file.size ? ` (${formatBytes(file.size)})` : "";
+      const link = file.url ? ` - ${file.url}` : "";
+      const status = file.stored === false ? " - selected for WhatsApp follow-up" : "";
+      return `${file.name}${size}${link}${status}`;
+    }),
+  ];
+}
+
+function updateFileSummary() {
+  if (!fileInput || !fileSummary) return;
+  const files = selectedFiles();
+  const totalBytes = files.reduce((sum, file) => sum + file.size, 0);
+
+  if (!files.length) {
+    fileSummary.textContent = "Sketches, screenshots, reference images, STL, OBJ, STEP, STP, 3MF, or PDF.";
+    currentAttachments = [];
+    updateEstimate();
+    return;
+  }
+
+  const names = files.map((file) => `${file.name} (${formatBytes(file.size)})`).join(", ");
+  const clipped = fileInput.files.length > maxUploadFiles ? ` Only the first ${maxUploadFiles} files will be attached.` : "";
+  const sizeWarning = totalBytes > maxUploadTotalBytes
+    ? " Large files will be listed in the request and can be sent directly on WhatsApp."
+    : "";
+  fileSummary.textContent = `${names}.${clipped}${sizeWarning}`;
+  currentAttachments = files.map((file) => ({
+    name: file.name,
+    size: file.size,
+    type: file.type || "application/octet-stream",
+    stored: false,
+  }));
+  updateEstimate();
+}
+
+function fileToPayload(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => {
+      resolve({
+        name: file.name,
+        type: file.type || "application/octet-stream",
+        size: file.size,
+        data: reader.result,
+      });
+    };
+    reader.onerror = () => reject(new Error(`Could not read ${file.name}.`));
+    reader.readAsDataURL(file);
+  });
+}
+
+async function uploadAttachments() {
+  const files = selectedFiles();
+  if (!files.length) return [];
+
+  const totalBytes = files.reduce((sum, file) => sum + file.size, 0);
+  const fallback = files.map((file) => ({
+    name: file.name,
+    type: file.type || "application/octet-stream",
+    size: file.size,
+    stored: false,
+  }));
+
+  if (files.some((file) => file.size > maxUploadBytes) || totalBytes > maxUploadTotalBytes) {
+    currentAttachments = fallback;
+    updateEstimate();
+    return fallback;
+  }
+
+  submitStatus.textContent = "Uploading your reference files...";
+
+  try {
+    const payloadFiles = await Promise.all(files.map(fileToPayload));
+    const response = await fetch("/api/upload-files", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ files: payloadFiles }),
+    });
+    const result = await response.json();
+
+    if (!response.ok) throw new Error(result.error || "Upload failed.");
+
+    currentAttachments = result.files?.length ? result.files : fallback;
+    updateEstimate();
+    return currentAttachments;
+  } catch {
+    currentAttachments = fallback;
+    updateEstimate();
+    return fallback;
+  }
+}
+
 function updateEstimate() {
   const data = new FormData(form);
   const projectType = data.get("projectType");
@@ -165,6 +284,7 @@ function updateEstimate() {
     `Dimensions: ${fieldValue(data, "dimensions")}`,
     `Design readiness: ${selectedLabel("readiness", data)}`,
     `Reference/file link: ${fieldValue(data, "referenceLink")}`,
+    ...attachmentLines(),
     "",
     "Material and finish",
     `Material: ${selectedLabel("material", data)}`,
@@ -189,7 +309,7 @@ function updateEstimate() {
   whatsapp.href = `https://wa.me/?text=${encodeURIComponent(brief)}`;
 }
 
-function collectQuotePayload() {
+function collectQuotePayload(attachments = currentAttachments) {
   const data = new FormData(form);
   return {
     createdAt: new Date().toISOString(),
@@ -206,6 +326,7 @@ function collectQuotePayload() {
       dimensions: fieldValue(data, "dimensions"),
       readiness: selectedLabel("readiness", data),
       referenceLink: fieldValue(data, "referenceLink"),
+      attachments,
       description: fieldValue(data, "description"),
       aiPossibilities: fieldValue(data, "aiBrief"),
     },
@@ -306,14 +427,16 @@ async function refineWithAi() {
 async function saveQuoteAndOpenWhatsapp(event) {
   event.preventDefault();
   updateEstimate();
-  submitStatus.textContent = "Saving your request before opening WhatsApp...";
+  submitStatus.textContent = "Preparing your request...";
   whatsapp.setAttribute("aria-disabled", "true");
 
   try {
+    const attachments = await uploadAttachments();
+    submitStatus.textContent = "Saving your request before opening WhatsApp...";
     const response = await fetch("/api/quote-requests", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(collectQuotePayload()),
+      body: JSON.stringify(collectQuotePayload(attachments)),
     });
     const result = await response.json();
 
@@ -344,6 +467,7 @@ window.addEventListener("keydown", (event) => {
 });
 form.addEventListener("input", updateEstimate);
 form.addEventListener("change", updateEstimate);
+fileInput?.addEventListener("change", updateFileSummary);
 prevStepButton.addEventListener("click", () => updateQuoteStep(currentQuoteStep - 1));
 nextStepButton.addEventListener("click", () => updateQuoteStep(currentQuoteStep + 1));
 quoteSteps.forEach((button) => {
