@@ -30,3 +30,9 @@ Create a Supabase table named `quote_requests` with columns matching the API pay
 `created_at`, `updated_at`, `customer_name`, `contact`, `project_type`, `quantity`, `size`, `dimensions`, `readiness`, `reference_link`, `attachments`, `description`, `ai_possibilities`, `material`, `color`, `finish`, `strength`, `timeline`, `budget`, `delivery`, `location`, `estimate`, `status`, `priority`, `follow_up_date`, `notes`, `source`.
 
 Use a `jsonb` column for `attachments`. Create a Supabase Storage bucket named `quote-attachments` for uploaded sketches, reference images, screenshots, and small STL/OBJ/STEP files. If the bucket is private, keep the stored `path` and open files from Supabase; if it is public, the admin panel can open the generated file URLs directly.
+
+You can also run the full setup script in Supabase SQL Editor:
+
+```sql
+-- see supabase-schema.sql
+```
