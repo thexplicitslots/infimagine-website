@@ -90,6 +90,7 @@ const sampleLeads = [
 let leads = loadLeads();
 let selectedId = leads[0]?.id || null;
 const pipelineStatuses = ["New", "Contacted", "Designing", "Quoted", "Won"];
+let remoteConfigured = false;
 
 function loadLeads() {
   const stored = localStorage.getItem(STORAGE_KEY);
@@ -108,6 +109,24 @@ function loadLeads() {
 
 function saveLeads() {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(leads));
+}
+
+async function loadRemoteLeads() {
+  try {
+    const response = await fetch("/api/quote-requests");
+    const result = await response.json();
+
+    if (!response.ok || !result.configured) {
+      return;
+    }
+
+    remoteConfigured = true;
+    leads = result.requests.length ? result.requests : leads;
+    selectedId = leads[0]?.id || null;
+    render();
+  } catch {
+    remoteConfigured = false;
+  }
 }
 
 function formatDate(value) {
@@ -278,6 +297,14 @@ function updateSelected(updates) {
   leads = leads.map((lead) => (lead.id === selectedId ? { ...lead, ...updates } : lead));
   saveLeads();
   render();
+
+  if (remoteConfigured) {
+    fetch("/api/quote-requests", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ id: selectedId, updates }),
+    }).catch(() => {});
+  }
 }
 
 function createLead() {
@@ -353,3 +380,4 @@ detailFields.notes.addEventListener("input", () => {
 deleteButton.addEventListener("click", () => updateSelected({ status: "Archived" }));
 
 render();
+loadRemoteLeads();

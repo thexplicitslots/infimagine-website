@@ -4,6 +4,7 @@ const mobileMenu = document.querySelector("[data-mobile-menu]");
 const form = document.querySelector("#quote-form");
 const estimate = document.querySelector("[data-estimate]");
 const whatsapp = document.querySelector("[data-whatsapp]");
+const submitStatus = document.querySelector("[data-submit-status]");
 const quoteStepLabel = document.querySelector("[data-step-label]");
 const quoteGroups = [...document.querySelectorAll("[data-step]")];
 const quoteSteps = [...document.querySelectorAll("[data-step-target]")];
@@ -15,6 +16,7 @@ const aiStatus = document.querySelector("[data-ai-status]");
 const year = document.querySelector("[data-year]");
 const totalQuoteSteps = quoteGroups.length;
 let currentQuoteStep = 1;
+let currentEstimateRange = "₹799 - ₹1,499";
 
 const revealTargets = [...new Set([
   ".statement-grid",
@@ -145,7 +147,8 @@ function updateEstimate() {
   const low = Math.round((base[0] + readinessCost[0] + finishCost[0] + materialCost[0]) * quantityMultiplier + timelineCost[0]);
   const high = Math.round((base[1] + readinessCost[1] + finishCost[1] + materialCost[1]) * quantityMultiplier + timelineCost[1]);
 
-  estimate.textContent = `${formatCurrency(low)} - ${formatCurrency(high)}`;
+  currentEstimateRange = `${formatCurrency(low)} - ${formatCurrency(high)}`;
+  estimate.textContent = currentEstimateRange;
   quoteStepLabel.textContent = `Step ${currentQuoteStep} of ${totalQuoteSteps} · Starting estimate`;
 
   const brief = [
@@ -181,9 +184,44 @@ function updateEstimate() {
     "AI design possibilities",
     fieldValue(data, "aiBrief"),
     "",
-    `Website estimate: ${formatCurrency(low)} - ${formatCurrency(high)}`,
+    `Website estimate: ${currentEstimateRange}`,
   ].join("\n");
   whatsapp.href = `https://wa.me/?text=${encodeURIComponent(brief)}`;
+}
+
+function collectQuotePayload() {
+  const data = new FormData(form);
+  return {
+    createdAt: new Date().toISOString(),
+    estimate: currentEstimateRange,
+    source: "Website quote form",
+    customer: {
+      name: fieldValue(data, "customerName"),
+      contact: fieldValue(data, "contactDetail"),
+    },
+    project: {
+      type: selectedLabel("projectType", data),
+      quantity: selectedLabel("quantity", data),
+      size: selectedLabel("size", data),
+      dimensions: fieldValue(data, "dimensions"),
+      readiness: selectedLabel("readiness", data),
+      referenceLink: fieldValue(data, "referenceLink"),
+      description: fieldValue(data, "description"),
+      aiPossibilities: fieldValue(data, "aiBrief"),
+    },
+    material: {
+      preference: selectedLabel("material", data),
+      color: fieldValue(data, "color"),
+      finish: selectedLabel("finish", data),
+      strength: selectedLabel("strength", data),
+    },
+    delivery: {
+      timeline: selectedLabel("timeline", data),
+      budget: selectedLabel("budget", data),
+      preference: selectedLabel("delivery", data),
+      location: fieldValue(data, "location"),
+    },
+  };
 }
 
 function updateQuoteStep(step) {
@@ -265,6 +303,31 @@ async function refineWithAi() {
   }
 }
 
+async function saveQuoteAndOpenWhatsapp(event) {
+  event.preventDefault();
+  updateEstimate();
+  submitStatus.textContent = "Saving your request before opening WhatsApp...";
+  whatsapp.setAttribute("aria-disabled", "true");
+
+  try {
+    const response = await fetch("/api/quote-requests", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(collectQuotePayload()),
+    });
+    const result = await response.json();
+
+    submitStatus.textContent = result.saved
+      ? "Request saved. Opening WhatsApp..."
+      : "Opening WhatsApp. Your request will still be sent in the message.";
+  } catch {
+    submitStatus.textContent = "Opening WhatsApp. Your request will still be sent in the message.";
+  } finally {
+    whatsapp.removeAttribute("aria-disabled");
+    window.location.href = whatsapp.href;
+  }
+}
+
 window.addEventListener("scroll", updateHeader, { passive: true });
 menuToggle.addEventListener("click", () => {
   setMobileMenu(!header.classList.contains("is-menu-open"));
@@ -287,6 +350,7 @@ quoteSteps.forEach((button) => {
   button.addEventListener("click", () => updateQuoteStep(Number(button.dataset.stepTarget)));
 });
 aiHelperButton.addEventListener("click", refineWithAi);
+whatsapp.addEventListener("click", saveQuoteAndOpenWhatsapp);
 
 year.textContent = new Date().getFullYear();
 updateHeader();

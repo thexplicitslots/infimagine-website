@@ -1486,6 +1486,15 @@ textarea:focus {
   transform: translateY(10px);
 }
 
+.submit-status {
+  grid-column: 1 / -1;
+  min-height: 20px;
+  margin: -2px 0 0;
+  color: rgba(110, 231, 255, 0.82);
+  font-size: 0.86rem;
+  font-weight: 750;
+}
+
 .quote-form[data-current-step="5"] [data-whatsapp] {
   display: inline-flex;
   animation: revealAction 260ms ease forwards;
