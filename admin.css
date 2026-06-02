@@ -654,7 +654,10 @@ textarea:focus {
   margin-top: 8px;
 }
 
+.attachment-actions a,
 .attachment-actions button {
+  display: inline-grid;
+  align-items: center;
   min-height: 32px;
   border: 1px solid rgba(110, 231, 255, 0.16);
   border-radius: 999px;
@@ -665,6 +668,7 @@ textarea:focus {
   font-weight: 900;
   padding: 0 12px;
   cursor: pointer;
+  text-decoration: none;
   transition:
     border-color 180ms ease,
     background 180ms ease,
@@ -672,6 +676,7 @@ textarea:focus {
     color 180ms ease;
 }
 
+.attachment-actions a:hover,
 .attachment-actions button:hover {
   border-color: rgba(110, 231, 255, 0.36);
   background: rgba(110, 231, 255, 0.12);

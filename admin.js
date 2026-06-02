@@ -357,7 +357,7 @@ function renderAttachments(attachments) {
             <span>${meta}</span>
             <em>${label}</em>
             <div class="attachment-actions">
-              <button type="button" data-file-url="${href}">Open</button>
+              <a href="${href}" target="_blank" rel="noreferrer">Open file</a>
               <button type="button" data-copy-file-url="${href}">Copy link</button>
             </div>
           </div>
