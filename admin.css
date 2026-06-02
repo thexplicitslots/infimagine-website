@@ -599,7 +599,7 @@ textarea:focus {
 
 .attachment-link {
   display: grid;
-  grid-template-columns: 1fr auto;
+  grid-template-columns: minmax(0, 1fr) auto;
   gap: 4px 12px;
   align-items: center;
   padding: 12px;
@@ -614,7 +614,8 @@ textarea:focus {
     transform 180ms ease;
 }
 
-.attachment-link:not(.is-static):hover {
+.attachment-link:not(.is-static):hover,
+.attachment-link:has(button:hover) {
   border-color: rgba(110, 231, 255, 0.36);
   box-shadow: 0 0 28px rgba(110, 231, 255, 0.11);
   transform: translateY(-1px);
@@ -643,6 +644,39 @@ textarea:focus {
   font-style: normal;
   font-weight: 900;
   text-transform: uppercase;
+}
+
+.attachment-actions {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.attachment-actions button {
+  min-height: 32px;
+  border: 1px solid rgba(110, 231, 255, 0.16);
+  border-radius: 999px;
+  background: rgba(110, 231, 255, 0.07);
+  color: rgba(232, 246, 250, 0.86);
+  font: inherit;
+  font-size: 0.72rem;
+  font-weight: 900;
+  padding: 0 12px;
+  cursor: pointer;
+  transition:
+    border-color 180ms ease,
+    background 180ms ease,
+    box-shadow 180ms ease,
+    color 180ms ease;
+}
+
+.attachment-actions button:hover {
+  border-color: rgba(110, 231, 255, 0.36);
+  background: rgba(110, 231, 255, 0.12);
+  box-shadow: 0 0 20px rgba(110, 231, 255, 0.1);
+  color: var(--white);
 }
 
 .attachment-empty {

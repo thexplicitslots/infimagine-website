@@ -352,11 +352,15 @@ function renderAttachments(attachments) {
 
       if (href) {
         return `
-          <a class="attachment-link" href="${href}" target="_blank" rel="noreferrer">
+          <div class="attachment-link">
             <strong>${name}</strong>
             <span>${meta}</span>
             <em>${label}</em>
-          </a>
+            <div class="attachment-actions">
+              <button type="button" data-file-url="${href}">Open</button>
+              <button type="button" data-copy-file-url="${href}">Copy link</button>
+            </div>
+          </div>
         `;
       }
 
@@ -369,6 +373,31 @@ function renderAttachments(attachments) {
       `;
     })
     .join("");
+}
+
+async function handleAttachmentAction(event) {
+  const openButton = event.target.closest("[data-file-url]");
+  const copyButton = event.target.closest("[data-copy-file-url]");
+
+  if (openButton) {
+    const url = openButton.dataset.fileUrl;
+    const opened = window.open(url, "_blank", "noopener,noreferrer");
+    if (!opened) window.location.href = url;
+    return;
+  }
+
+  if (copyButton) {
+    const url = copyButton.dataset.copyFileUrl;
+    try {
+      await navigator.clipboard.writeText(url);
+      copyButton.textContent = "Copied";
+      window.setTimeout(() => {
+        copyButton.textContent = "Copy link";
+      }, 1400);
+    } catch {
+      window.prompt("Copy file link", url);
+    }
+  }
 }
 
 function render() {
@@ -475,6 +504,7 @@ statusFilter.addEventListener("change", renderLeads);
 exportButton.addEventListener("click", exportCsv);
 addLeadButton.addEventListener("click", () => document.querySelector("#import").scrollIntoView({ behavior: "smooth" }));
 createLeadButton.addEventListener("click", createLead);
+detailFields.attachments.addEventListener("click", handleAttachmentAction);
 detailFields.statusSelect.addEventListener("change", () => updateSelected({ status: detailFields.statusSelect.value }));
 detailFields.priority.addEventListener("change", () => updateSelected({ priority: detailFields.priority.value }));
 detailFields.followUp.addEventListener("change", () => updateSelected({ followUpDate: detailFields.followUp.value }));
