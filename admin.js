@@ -39,6 +39,14 @@ const detailFields = {
   description: document.querySelector("[data-detail-description]"),
   possibilities: document.querySelector("[data-detail-possibilities]"),
   attachments: document.querySelector("[data-detail-attachments]"),
+  productionConfidence: document.querySelector("[data-production-confidence]"),
+  productionDimensions: document.querySelector("[data-production-dimensions]"),
+  productionWeight: document.querySelector("[data-production-weight]"),
+  productionFilament: document.querySelector("[data-production-filament]"),
+  productionTime: document.querySelector("[data-production-time]"),
+  productionRate: document.querySelector("[data-production-rate]"),
+  productionPrice: document.querySelector("[data-production-price]"),
+  productionNote: document.querySelector("[data-production-note]"),
   notes: document.querySelector("[data-detail-notes]"),
   whatsapp: document.querySelector("[data-detail-whatsapp]"),
 };
@@ -63,9 +71,17 @@ const sampleLeads = [
     status: "New",
     priority: "High",
     estimate: "₹2,499 - ₹5,499",
+    quantity: "1 piece",
+    size: "Medium, desk-sized",
+    dimensions: "14 x 8 x 7 cm",
     material: "PETG or Nylon",
+    color: "Matte black",
     finish: "Functional matte black",
+    strength: "Strong functional use",
     timeline: "Within 1 week",
+    budget: "₹3,000 - ₹7,000",
+    delivery: "Pickup",
+    location: "Local",
     followUpDate: "2026-06-03",
     created: "2026-05-31T09:15:00.000Z",
     description: "Compact phone stand with cable routing for a desk setup.",
@@ -84,9 +100,17 @@ const sampleLeads = [
     status: "Contacted",
     priority: "Normal",
     estimate: "₹1,499 - ₹2,999",
+    quantity: "1 piece",
+    size: "Small, palm-sized",
+    dimensions: "18 x 6 x 3 cm",
     material: "PLA",
+    color: "Custom",
     finish: "Smooth painted",
+    strength: "Visual/display quality",
     timeline: "3-5 days",
+    budget: "₹1,000 - ₹3,000",
+    delivery: "Local delivery",
+    location: "Local",
     followUpDate: "2026-06-04",
     created: "2026-05-30T13:35:00.000Z",
     description: "Custom nameplate and miniature desk object for a birthday gift.",
@@ -103,9 +127,17 @@ const sampleLeads = [
     status: "Designing",
     priority: "Normal",
     estimate: "₹6,999 - ₹14,999",
+    quantity: "1 piece",
+    size: "Large or multi-part",
+    dimensions: "45 x 30 x 16 cm",
     material: "PLA or ABS/ASA",
+    color: "Architectural white",
     finish: "Architectural display finish",
+    strength: "Balanced look and strength",
     timeline: "Flexible",
+    budget: "₹7,000+",
+    delivery: "Shipping",
+    location: "Studio",
     followUpDate: "",
     created: "2026-05-28T11:10:00.000Z",
     description: "Architectural scale model for a boutique retail kiosk.",
@@ -124,6 +156,22 @@ const pipelineStatuses = ["New", "Contacted", "Designing", "Quoted", "Won"];
 let remoteConfigured = false;
 let notesSaveTimer;
 let activeViewer = null;
+
+const materialProfiles = [
+  { match: "peek", label: "PEEK", density: 1.3, rate: 25000, flow: 18 },
+  { match: "nylon", label: "Nylon", density: 1.08, rate: 3200, flow: 34 },
+  { match: "flexible", label: "Flexible", density: 1.2, rate: 2600, flow: 22 },
+  { match: "abs", label: "ABS/ASA", density: 1.04, rate: 1500, flow: 38 },
+  { match: "asa", label: "ABS/ASA", density: 1.04, rate: 1500, flow: 38 },
+  { match: "petg", label: "PETG", density: 1.27, rate: 1200, flow: 42 },
+  { match: "pla", label: "PLA", density: 1.24, rate: 900, flow: 46 },
+];
+
+const sizeFallbacks = [
+  { match: "large", dimensions: [32, 22, 16], confidence: "Low" },
+  { match: "medium", dimensions: [18, 12, 8], confidence: "Medium" },
+  { match: "small", dimensions: [8, 6, 4], confidence: "Medium" },
+];
 
 function loadLeads() {
   const stored = localStorage.getItem(STORAGE_KEY);
@@ -207,6 +255,14 @@ function numericEstimate(value) {
   return numbers.reduce((sum, item) => sum + Number(item.replace(/,/g, "")), 0) / Math.max(numbers.length, 1);
 }
 
+function estimateRange(value) {
+  const numbers = String(value).match(/\d[\d,]*/g) || [];
+  const parsed = numbers.map((item) => Number(item.replace(/,/g, ""))).filter(Boolean);
+  if (!parsed.length) return null;
+  if (parsed.length === 1) return [parsed[0], parsed[0]];
+  return [Math.min(...parsed), Math.max(...parsed)];
+}
+
 function formatBytes(bytes) {
   if (!bytes) return "0 KB";
   const units = ["B", "KB", "MB", "GB"];
@@ -217,6 +273,108 @@ function formatBytes(bytes) {
     index += 1;
   }
   return `${value.toFixed(value >= 10 || index === 0 ? 0 : 1)} ${units[index]}`;
+}
+
+function formatCurrency(value) {
+  return new Intl.NumberFormat("en-IN", {
+    style: "currency",
+    currency: "INR",
+    maximumFractionDigits: 0,
+  }).format(value);
+}
+
+function parseQuantity(value) {
+  const text = String(value || "");
+  if (text.includes("+")) return Number(text.match(/\d+/)?.[0] || 1);
+  const numbers = text.match(/\d+/g)?.map(Number) || [];
+  if (!numbers.length) return 1;
+  if (numbers.length === 1) return Math.max(numbers[0], 1);
+  return Math.max(Math.round((numbers[0] + numbers[1]) / 2), 1);
+}
+
+function materialProfile(value) {
+  const text = String(value || "").toLowerCase();
+  return materialProfiles.find((profile) => text.includes(profile.match)) || {
+    label: "Recommended",
+    density: 1.2,
+    rate: 1300,
+    flow: 40,
+  };
+}
+
+function parseDimensions(value, size) {
+  const text = String(value || "").toLowerCase();
+  const numbers = text.match(/\d+(?:\.\d+)?/g)?.slice(0, 3).map(Number) || [];
+  let unit = "cm";
+
+  if (text.includes("mm")) unit = "mm";
+  if (text.includes("inch") || text.includes("inches") || /\bin\b/.test(text)) unit = "in";
+
+  if (numbers.length >= 3) {
+    const multiplier = unit === "mm" ? 0.1 : unit === "in" ? 2.54 : 1;
+    return {
+      confidence: "High",
+      dimensions: numbers.map((number) => Math.max(number * multiplier, 0.1)),
+      source: "customer dimensions",
+    };
+  }
+
+  const fallback = sizeFallbacks.find((item) => String(size || "").toLowerCase().includes(item.match)) || sizeFallbacks[2];
+  return {
+    confidence: fallback.confidence,
+    dimensions: fallback.dimensions,
+    source: "size-class fallback",
+  };
+}
+
+function infillFactor(lead) {
+  const text = `${lead.strength || ""} ${lead.finish || ""} ${lead.type || ""}`.toLowerCase();
+  if (text.includes("strong") || text.includes("functional") || text.includes("outdoor")) return 0.26;
+  if (text.includes("balanced") || text.includes("prototype") || text.includes("utility")) return 0.2;
+  return 0.14;
+}
+
+function complexityFactor(lead) {
+  const text = `${lead.type || ""} ${lead.finish || ""} ${lead.description || ""}`.toLowerCase();
+  let factor = 1;
+  if (text.includes("smooth") || text.includes("paint")) factor += 0.18;
+  if (text.includes("miniature") || text.includes("model")) factor += 0.16;
+  if (text.includes("prototype") || text.includes("functional")) factor += 0.12;
+  return factor;
+}
+
+function productionEstimate(lead) {
+  const parsed = parseDimensions(lead.dimensions, lead.size);
+  const [length, width, height] = parsed.dimensions;
+  const profile = materialProfile(lead.material);
+  const quantity = parseQuantity(lead.quantity);
+  const shellFactor = 1.18;
+  const supportFactor = String(lead.readiness || lead.description || "").toLowerCase().includes("support") ? 1.18 : 1.1;
+  const occupiedVolume = length * width * height * infillFactor(lead) * shellFactor;
+  const gramsEach = Math.max(occupiedVolume * profile.density * supportFactor, 8);
+  const totalGrams = gramsEach * quantity;
+  const filamentCost = Math.max((totalGrams / 1000) * profile.rate * 1.12, 25);
+  const hoursEach = Math.max((gramsEach / profile.flow) * complexityFactor(lead) + 0.6, 1);
+  const totalHours = hoursEach * quantity;
+  const machineCost = totalHours * 95;
+  const finishingCost = totalHours * (String(lead.finish || "").toLowerCase().includes("smooth") ? 170 : 80);
+  const setupCost = parsed.confidence === "High" ? 350 : 550;
+  const suggestedLow = Math.round((filamentCost + machineCost + finishingCost + setupCost) / 50) * 50;
+  const suggestedHigh = Math.round((suggestedLow * 1.45) / 50) * 50;
+  const websiteRange = estimateRange(lead.estimate);
+
+  return {
+    confidence: parsed.confidence,
+    dimensions: `${length.toFixed(1)} x ${width.toFixed(1)} x ${height.toFixed(1)} cm`,
+    filament: formatCurrency(filamentCost),
+    note: `Based on ${parsed.source}, ${quantity} piece${quantity > 1 ? "s" : ""}, ${profile.label}, and approximate infill/shell assumptions. Final numbers need slicer confirmation from the approved STL.`,
+    price: websiteRange
+      ? `${formatCurrency(Math.max(suggestedLow, websiteRange[0]))} - ${formatCurrency(Math.max(suggestedHigh, websiteRange[1]))}`
+      : `${formatCurrency(suggestedLow)} - ${formatCurrency(suggestedHigh)}`,
+    rate: `${profile.label} · ${formatCurrency(profile.rate)}/kg`,
+    time: `${totalHours < 10 ? totalHours.toFixed(1) : Math.round(totalHours)} hr`,
+    weight: `${Math.round(totalGrams)} g`,
+  };
 }
 
 function fileExtension(file) {
@@ -384,11 +542,25 @@ function renderDetail() {
   detailFields.created.textContent = formatDate(lead.created);
   detailFields.description.textContent = lead.description;
   detailFields.possibilities.textContent = lead.possibilities || "No AI design possibilities saved yet.";
+  renderProductionEstimate(lead);
   renderAttachments(lead.attachments || []);
   detailFields.notes.value = lead.notes || "";
   detailFields.whatsapp.href = `https://wa.me/?text=${encodeURIComponent(
     `Hi ${lead.name}, this is InfiMagine about your ${lead.type.toLowerCase()} request.`,
   )}`;
+}
+
+function renderProductionEstimate(lead) {
+  const estimate = productionEstimate(lead);
+  detailFields.productionConfidence.textContent = `${estimate.confidence} confidence`;
+  detailFields.productionConfidence.className = `confidence-pill confidence-${estimate.confidence.toLowerCase()}`;
+  detailFields.productionDimensions.textContent = estimate.dimensions;
+  detailFields.productionWeight.textContent = estimate.weight;
+  detailFields.productionFilament.textContent = estimate.filament;
+  detailFields.productionTime.textContent = estimate.time;
+  detailFields.productionRate.textContent = estimate.rate;
+  detailFields.productionPrice.textContent = estimate.price;
+  detailFields.productionNote.textContent = estimate.note;
 }
 
 function renderAttachments(attachments) {
@@ -673,9 +845,17 @@ function createLead() {
     status: "New",
     priority: "Normal",
     estimate: newFields.estimate.value.trim() || "Not estimated",
+    quantity: "1 piece",
+    size: "Medium, desk-sized",
+    dimensions: "",
     material: newFields.material.value.trim() || "Recommend after review",
+    color: "",
     finish: newFields.finish.value.trim() || "Not set",
+    strength: "Balanced look and strength",
     timeline: "Not set",
+    budget: "Not set",
+    delivery: "Not set",
+    location: "",
     followUpDate: newFields.followUp.value,
     created: new Date().toISOString(),
     description,
@@ -694,15 +874,24 @@ function createLead() {
 }
 
 function exportCsv() {
-  const headers = ["Name", "Contact", "Type", "Status", "Priority", "Estimate", "Material", "Finish", "Timeline", "Follow-up", "Created", "Description", "AI Possibilities", "Attachments", "Notes"];
-  const rows = leads.map((lead) =>
-    [
+  const headers = ["Name", "Contact", "Type", "Status", "Priority", "Estimate", "Quantity", "Size", "Dimensions", "Approx Weight", "Filament Cost", "Print Time", "Material Rate", "Suggested Quote", "Material", "Finish", "Timeline", "Follow-up", "Created", "Description", "AI Possibilities", "Attachments", "Notes"];
+  const rows = leads.map((lead) => {
+    const production = productionEstimate(lead);
+    return [
       lead.name,
       lead.contact,
       lead.type,
       lead.status,
       lead.priority,
       lead.estimate,
+      lead.quantity,
+      lead.size,
+      lead.dimensions,
+      production.weight,
+      production.filament,
+      production.time,
+      production.rate,
+      production.price,
       lead.material,
       lead.finish,
       lead.timeline,
@@ -714,8 +903,8 @@ function exportCsv() {
       lead.notes,
     ]
       .map((value) => `"${String(value || "").replace(/"/g, '""')}"`)
-      .join(","),
-  );
+      .join(",");
+  });
   const blob = new Blob([[headers.join(","), ...rows].join("\n")], { type: "text/csv;charset=utf-8" });
   const url = URL.createObjectURL(blob);
   const link = document.createElement("a");
