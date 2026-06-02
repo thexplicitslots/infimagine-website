@@ -629,6 +629,12 @@ textarea:focus {
   color: var(--green);
 }
 
+.confidence-sliced {
+  border-color: rgba(139, 207, 135, 0.42);
+  color: var(--green);
+  box-shadow: 0 0 18px rgba(139, 207, 135, 0.1);
+}
+
 .confidence-medium {
   border-color: rgba(110, 231, 255, 0.3);
   color: var(--cyan);

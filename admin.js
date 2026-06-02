@@ -156,6 +156,7 @@ const pipelineStatuses = ["New", "Contacted", "Designing", "Quoted", "Won"];
 let remoteConfigured = false;
 let notesSaveTimer;
 let activeViewer = null;
+let slicerEstimates = {};
 
 const materialProfiles = [
   { match: "peek", label: "PEEK", rate: 25000 },
@@ -297,9 +298,23 @@ function parseDimensions(value) {
 }
 
 function productionEstimate(lead) {
+  const storedEstimate = slicerEstimates[lead.id];
   const parsed = parseDimensions(lead.dimensions);
   const profile = materialProfile(lead.material);
   const stlFiles = (lead.attachments || []).filter((file) => file.url && fileKind(file) === "stl");
+
+  if (storedEstimate) {
+    return {
+      confidence: "Sliced",
+      dimensions: parsed ? `${parsed.dimensions.map((value) => value.toFixed(1)).join(" x ")} cm` : "Use STL viewbox for geometry",
+      filament: storedEstimate.cost ? formatCurrency(storedEstimate.cost) : "Not reported by slicer",
+      note: `PrusaSlicer CLI result from ${storedEstimate.fileName}. Profile and printer settings determine these values.`,
+      price: lead.estimate || "Quote after review",
+      rate: `${profile.label} · ${formatCurrency(profile.rate)}/kg`,
+      time: storedEstimate.printTime || "Not reported by slicer",
+      weight: storedEstimate.grams ? `${Math.round(storedEstimate.grams)} g` : "Not reported by slicer",
+    };
+  }
 
   return {
     confidence: parsed ? "Known" : stlFiles.length ? "STL ready" : "Review",
@@ -514,6 +529,7 @@ function renderAttachments(attachments) {
       const href = file.url ? escapeHtml(file.url) : "";
       const label = file.stored ? "Uploaded" : "Captured";
       const encodedFile = encodeURIComponent(JSON.stringify(file));
+      const isStl = fileKind(file) === "stl";
 
       if (href) {
         return `
@@ -523,6 +539,7 @@ function renderAttachments(attachments) {
             <em>${label}</em>
             <div class="attachment-actions">
               <button type="button" data-view-file="${encodedFile}">View</button>
+              ${isStl ? `<button type="button" data-slice-file="${encodedFile}">Slice estimate</button>` : ""}
               <a href="${href}" target="_blank" rel="noreferrer">Open file</a>
               <button type="button" data-copy-file-url="${href}">Copy link</button>
             </div>
@@ -543,6 +560,7 @@ function renderAttachments(attachments) {
 
 async function handleAttachmentAction(event) {
   const viewButton = event.target.closest("[data-view-file]");
+  const sliceButton = event.target.closest("[data-slice-file]");
   const openButton = event.target.closest("[data-file-url]");
   const copyButton = event.target.closest("[data-copy-file-url]");
 
@@ -551,6 +569,15 @@ async function handleAttachmentAction(event) {
       openFileViewer(JSON.parse(decodeURIComponent(viewButton.dataset.viewFile)));
     } catch {
       window.alert("Could not open this file preview.");
+    }
+    return;
+  }
+
+  if (sliceButton) {
+    try {
+      await runSliceEstimate(JSON.parse(decodeURIComponent(sliceButton.dataset.sliceFile)), sliceButton);
+    } catch {
+      window.alert("Could not start the slicer estimate.");
     }
     return;
   }
@@ -573,6 +600,42 @@ async function handleAttachmentAction(event) {
     } catch {
       window.prompt("Copy file link", url);
     }
+  }
+}
+
+async function runSliceEstimate(file, button) {
+  const lead = selectedLead();
+  if (!lead) return;
+
+  button.disabled = true;
+  button.textContent = "Slicing...";
+  detailFields.productionNote.textContent = "Running PrusaSlicer CLI estimate...";
+
+  try {
+    const response = await fetch("/api/slice-estimate", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ file }),
+    });
+    const result = await response.json();
+
+    if (!response.ok) throw new Error(result.error || "Slicer estimate failed.");
+
+    if (!result.configured) {
+      detailFields.productionNote.textContent = result.message || "PrusaSlicer CLI is not configured on this server.";
+      return;
+    }
+
+    slicerEstimates = {
+      ...slicerEstimates,
+      [lead.id]: result,
+    };
+    renderProductionEstimate(lead);
+  } catch (error) {
+    detailFields.productionNote.textContent = error.message || "Slicer estimate failed.";
+  } finally {
+    button.disabled = false;
+    button.textContent = "Slice estimate";
   }
 }
 
