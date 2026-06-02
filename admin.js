@@ -10,6 +10,8 @@ const createLeadButton = document.querySelector("[data-create-lead]");
 const deleteButton = document.querySelector("[data-delete]");
 const emptyState = document.querySelector("[data-empty]");
 const detail = document.querySelector("[data-detail]");
+const connectionTitle = document.querySelector("[data-connection-title]");
+const connectionCopy = document.querySelector("[data-connection-copy]");
 
 const detailFields = {
   type: document.querySelector("[data-detail-type]"),
@@ -132,21 +134,43 @@ function saveLeads() {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(leads));
 }
 
+function updateConnectionNote(mode) {
+  if (!connectionTitle || !connectionCopy) return;
+
+  if (mode === "live") {
+    connectionTitle.textContent = "Supabase live";
+    connectionCopy.textContent = "Incoming website requests are loading from the connected database.";
+    return;
+  }
+
+  if (mode === "error") {
+    connectionTitle.textContent = "Local fallback";
+    connectionCopy.textContent = "Could not load the database from this session, so local saved requests are shown.";
+    return;
+  }
+
+  connectionTitle.textContent = "Connecting";
+  connectionCopy.textContent = "Checking the live request database.";
+}
+
 async function loadRemoteLeads() {
   try {
     const response = await fetch("/api/quote-requests");
     const result = await response.json();
 
     if (!response.ok || !result.configured) {
+      updateConnectionNote("error");
       return;
     }
 
     remoteConfigured = true;
+    updateConnectionNote("live");
     leads = result.requests.length ? result.requests : leads;
     selectedId = leads[0]?.id || null;
     render();
   } catch {
     remoteConfigured = false;
+    updateConnectionNote("error");
   }
 }
 
