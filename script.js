@@ -32,6 +32,8 @@ const revealTargets = [...new Set([
   ".preview-copy",
   ".product-preview",
   ".steps li",
+  ".trust-card",
+  ".faq-panel",
   ".estimate-copy",
   ".quote-form",
   ".contact-grid",
