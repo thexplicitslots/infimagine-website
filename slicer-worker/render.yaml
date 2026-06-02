@@ -1,0 +1,11 @@
+services:
+  - type: web
+    name: infimagine-slicer-worker
+    runtime: docker
+    envVars:
+      - key: SLICER_WORKER_SECRET
+        sync: false
+      - key: MATERIAL_COST_PER_KG
+        value: "1200"
+      - key: SLICER_PROFILE_NAME
+        value: "PrusaSlicer worker profile"
