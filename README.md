@@ -37,17 +37,15 @@ You can also run the full setup script in Supabase SQL Editor:
 -- see supabase-schema.sql
 ```
 
-## PrusaSlicer CLI estimates
+## External slicer worker estimates
 
-The admin panel can request real STL slice estimates through `/api/slice-estimate`. This requires PrusaSlicer to be installed on the server/runtime that executes the API.
+The admin panel can request real STL slice estimates through `/api/slice-estimate`. Vercel does not run PrusaSlicer directly. Instead, the API creates a short-lived signed Supabase Storage URL for the selected STL and sends it to an external slicer worker.
 
 Environment variables:
 
 ```bash
-PRUSASLICER_CLI_PATH=/path/to/prusa-slicer
-PRUSASLICER_CONFIG_PATH=/path/to/exported-profile.ini
-PRUSASLICER_MATERIAL_COST_PER_KG=1200
-PRUSASLICER_TIMEOUT_MS=120000
+SLICER_WORKER_URL=
+SLICER_WORKER_SECRET=
 ```
 
-Export your printer/filament/print profile from PrusaSlicer as an `.ini` and point `PRUSASLICER_CONFIG_PATH` to it. Without a CLI binary and profile, the admin will keep showing `Requires slicer output` instead of guessed values.
+The worker receives `quoteRequestId`, `attachmentPath`, `signedUrl`, `filename`, `material`, and profile context. It should return parsed slicing fields such as `estimated_print_time_minutes`, `estimated_filament_grams`, `estimated_filament_cost`, and `slicer_profile`. Without a configured worker, the admin shows `Slicer worker not configured` instead of guessed values.

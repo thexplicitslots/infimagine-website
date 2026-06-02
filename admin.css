@@ -645,6 +645,11 @@ textarea:focus {
   color: var(--cyan);
 }
 
+.confidence-queued {
+  border-color: rgba(110, 231, 255, 0.3);
+  color: var(--cyan);
+}
+
 .confidence-review {
   border-color: rgba(255, 255, 255, 0.16);
   color: rgba(232, 246, 250, 0.68);

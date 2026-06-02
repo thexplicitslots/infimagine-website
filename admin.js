@@ -316,6 +316,45 @@ function productionEstimate(lead) {
     };
   }
 
+  if (lead.slice?.status === "complete") {
+    return {
+      confidence: "Sliced",
+      dimensions: parsed ? `${parsed.dimensions.map((value) => value.toFixed(1)).join(" x ")} cm` : "Use STL viewbox for geometry",
+      filament: lead.slice.filamentCost ? formatCurrency(lead.slice.filamentCost) : "Not reported by worker",
+      note: `External slicer worker result${lead.slice.slicedAt ? ` from ${formatDate(lead.slice.slicedAt)}` : ""}. Profile and printer settings determine these values.`,
+      price: lead.estimate || "Quote after review",
+      rate: `${profile.label} · ${formatCurrency(profile.rate)}/kg`,
+      time: lead.slice.printTimeMinutes ? `${Math.round(lead.slice.printTimeMinutes)} min` : "Not reported by worker",
+      weight: lead.slice.filamentGrams ? `${Math.round(lead.slice.filamentGrams)} g` : "Not reported by worker",
+    };
+  }
+
+  if (lead.slice?.status === "queued") {
+    return {
+      confidence: "Queued",
+      dimensions: parsed ? `${parsed.dimensions.map((value) => value.toFixed(1)).join(" x ")} cm` : "Use STL viewbox for geometry",
+      filament: "Waiting for worker",
+      note: "Slicing queued. Refresh the request after the worker updates the slice fields.",
+      price: lead.estimate || "Quote after review",
+      rate: `${profile.label} · ${formatCurrency(profile.rate)}/kg`,
+      time: "Waiting for worker",
+      weight: "Waiting for worker",
+    };
+  }
+
+  if (lead.slice?.status === "failed" || lead.slice?.status === "not_configured") {
+    return {
+      confidence: "Review",
+      dimensions: parsed ? `${parsed.dimensions.map((value) => value.toFixed(1)).join(" x ")} cm` : "Needs measured dimensions or STL analysis",
+      filament: "Requires slicer output",
+      note: lead.slice.error ? `Slicing failed: ${lead.slice.error}` : "Slicer worker not configured",
+      price: lead.estimate || "Quote after slicer review",
+      rate: `${profile.label} · ${formatCurrency(profile.rate)}/kg`,
+      time: "Requires slicer output",
+      weight: "Requires slicer output",
+    };
+  }
+
   return {
     confidence: parsed ? "Known" : stlFiles.length ? "STL ready" : "Review",
     dimensions: parsed ? `${parsed.dimensions.map((value) => value.toFixed(1)).join(" x ")} cm` : "Needs measured dimensions or STL analysis",
@@ -609,30 +648,45 @@ async function runSliceEstimate(file, button) {
 
   button.disabled = true;
   button.textContent = "Slicing...";
-  detailFields.productionNote.textContent = "Running PrusaSlicer CLI estimate...";
+  detailFields.productionNote.textContent = "Slicing queued";
 
   try {
     const response = await fetch("/api/slice-estimate", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ file }),
+      body: JSON.stringify({
+        attachmentPath: file.path,
+        quoteRequestId: lead.id,
+      }),
     });
     const result = await response.json();
 
     if (!response.ok) throw new Error(result.error || "Slicer estimate failed.");
 
     if (!result.configured) {
-      detailFields.productionNote.textContent = result.message || "PrusaSlicer CLI is not configured on this server.";
+      detailFields.productionNote.textContent = result.message || "Slicer worker not configured";
+      if (result.request) {
+        leads = leads.map((item) => (item.id === lead.id ? result.request : item));
+        saveLeads();
+        render();
+      }
       return;
     }
 
-    slicerEstimates = {
-      ...slicerEstimates,
-      [lead.id]: result,
-    };
-    renderProductionEstimate(lead);
+    if (result.request) {
+      leads = leads.map((item) => (item.id === lead.id ? result.request : item));
+      saveLeads();
+      render();
+    } else {
+      slicerEstimates = {
+        ...slicerEstimates,
+        [lead.id]: result.slice || result,
+      };
+      renderProductionEstimate(lead);
+    }
+    detailFields.productionNote.textContent = result.message || "Slicing complete";
   } catch (error) {
-    detailFields.productionNote.textContent = error.message || "Slicer estimate failed.";
+    detailFields.productionNote.textContent = error.message || "Slicing failed.";
   } finally {
     button.disabled = false;
     button.textContent = "Slice estimate";
