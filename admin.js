@@ -20,7 +20,10 @@ const detailFields = {
   priority: document.querySelector("[data-detail-priority]"),
   estimate: document.querySelector("[data-detail-estimate]"),
   material: document.querySelector("[data-detail-material]"),
+  finish: document.querySelector("[data-detail-finish]"),
   timeline: document.querySelector("[data-detail-timeline]"),
+  followUp: document.querySelector("[data-detail-follow-up]"),
+  followUpLabel: document.querySelector("[data-detail-follow-up-label]"),
   created: document.querySelector("[data-detail-created]"),
   description: document.querySelector("[data-detail-description]"),
   possibilities: document.querySelector("[data-detail-possibilities]"),
@@ -33,6 +36,9 @@ const newFields = {
   contact: document.querySelector("[data-new-contact]"),
   type: document.querySelector("[data-new-type]"),
   estimate: document.querySelector("[data-new-estimate]"),
+  material: document.querySelector("[data-new-material]"),
+  finish: document.querySelector("[data-new-finish]"),
+  followUp: document.querySelector("[data-new-follow-up]"),
   description: document.querySelector("[data-new-description]"),
 };
 
@@ -46,7 +52,9 @@ const sampleLeads = [
     priority: "High",
     estimate: "₹2,499 - ₹5,499",
     material: "PETG or Nylon",
+    finish: "Functional matte black",
     timeline: "Within 1 week",
+    followUpDate: "2026-06-03",
     created: "2026-05-31T09:15:00.000Z",
     description: "Compact phone stand with cable routing for a desk setup.",
     possibilities:
@@ -62,7 +70,9 @@ const sampleLeads = [
     priority: "Normal",
     estimate: "₹1,499 - ₹2,999",
     material: "PLA",
+    finish: "Smooth painted",
     timeline: "3-5 days",
+    followUpDate: "2026-06-04",
     created: "2026-05-30T13:35:00.000Z",
     description: "Custom nameplate and miniature desk object for a birthday gift.",
     possibilities:
@@ -78,7 +88,9 @@ const sampleLeads = [
     priority: "Normal",
     estimate: "₹6,999 - ₹14,999",
     material: "PLA or ABS/ASA",
+    finish: "Architectural display finish",
     timeline: "Flexible",
+    followUpDate: "",
     created: "2026-05-28T11:10:00.000Z",
     description: "Architectural scale model for a boutique retail kiosk.",
     possibilities:
@@ -91,6 +103,7 @@ let leads = loadLeads();
 let selectedId = leads[0]?.id || null;
 const pipelineStatuses = ["New", "Contacted", "Designing", "Quoted", "Won"];
 let remoteConfigured = false;
+let notesSaveTimer;
 
 function loadLeads() {
   const stored = localStorage.getItem(STORAGE_KEY);
@@ -138,6 +151,15 @@ function formatDate(value) {
   }).format(new Date(value));
 }
 
+function formatDateOnly(value) {
+  if (!value) return "Not set";
+  return new Intl.DateTimeFormat("en-IN", {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+  }).format(new Date(`${value}T00:00:00`));
+}
+
 function numericEstimate(value) {
   const numbers = String(value).match(/\d[\d,]*/g) || [];
   return numbers.reduce((sum, item) => sum + Number(item.replace(/,/g, "")), 0) / Math.max(numbers.length, 1);
@@ -161,7 +183,7 @@ function filteredLeads() {
   const status = statusFilter.value;
   return leads.filter((lead) => {
     const matchesStatus = status === "all" || lead.status === status;
-    const text = [lead.name, lead.contact, lead.type, lead.status, lead.material, lead.description, lead.possibilities]
+    const text = [lead.name, lead.contact, lead.type, lead.status, lead.material, lead.finish, lead.description, lead.possibilities]
       .join(" ")
       .toLowerCase();
     return matchesStatus && text.includes(query);
@@ -205,8 +227,10 @@ function renderLeads() {
       </div>
       <p>${escapeHtml(lead.description)}</p>
       <div class="lead-meta">
+        <span class="meta-pill">${escapeHtml(lead.contact)}</span>
         <span class="meta-pill">${escapeHtml(lead.type)}</span>
         <span class="meta-pill">${escapeHtml(lead.estimate)}</span>
+        <span class="meta-pill">Follow-up: ${escapeHtml(formatDateOnly(lead.followUpDate))}</span>
         <span class="meta-pill">${escapeHtml(formatDate(lead.created))}</span>
       </div>
     `;
@@ -243,6 +267,7 @@ function renderPipeline() {
           <strong>${escapeHtml(lead.name)}</strong>
           <span>${escapeHtml(lead.type)}</span>
           <small>${escapeHtml(lead.estimate)}</small>
+          <small>Follow-up: ${escapeHtml(formatDateOnly(lead.followUpDate))}</small>
         `;
         items.append(item);
       });
@@ -276,7 +301,10 @@ function renderDetail() {
   detailFields.priority.value = lead.priority;
   detailFields.estimate.textContent = lead.estimate;
   detailFields.material.textContent = lead.material || "Not set";
+  detailFields.finish.textContent = lead.finish || "Not set";
   detailFields.timeline.textContent = lead.timeline || "Not set";
+  detailFields.followUp.value = lead.followUpDate || "";
+  detailFields.followUpLabel.textContent = formatDateOnly(lead.followUpDate);
   detailFields.created.textContent = formatDate(lead.created);
   detailFields.description.textContent = lead.description;
   detailFields.possibilities.textContent = lead.possibilities || "No AI design possibilities saved yet.";
@@ -318,8 +346,10 @@ function createLead() {
     status: "New",
     priority: "Normal",
     estimate: newFields.estimate.value.trim() || "Not estimated",
-    material: "Recommend after review",
+    material: newFields.material.value.trim() || "Recommend after review",
+    finish: newFields.finish.value.trim() || "Not set",
     timeline: "Not set",
+    followUpDate: newFields.followUp.value,
     created: new Date().toISOString(),
     description,
     possibilities: "Use the AI Design Explorer from the quote flow, then paste the strongest ideas here.",
@@ -336,9 +366,24 @@ function createLead() {
 }
 
 function exportCsv() {
-  const headers = ["Name", "Contact", "Type", "Status", "Priority", "Estimate", "Material", "Timeline", "Created", "Description", "Notes"];
+  const headers = ["Name", "Contact", "Type", "Status", "Priority", "Estimate", "Material", "Finish", "Timeline", "Follow-up", "Created", "Description", "AI Possibilities", "Notes"];
   const rows = leads.map((lead) =>
-    [lead.name, lead.contact, lead.type, lead.status, lead.priority, lead.estimate, lead.material, lead.timeline, lead.created, lead.description, lead.notes]
+    [
+      lead.name,
+      lead.contact,
+      lead.type,
+      lead.status,
+      lead.priority,
+      lead.estimate,
+      lead.material,
+      lead.finish,
+      lead.timeline,
+      lead.followUpDate,
+      lead.created,
+      lead.description,
+      lead.possibilities,
+      lead.notes,
+    ]
       .map((value) => `"${String(value || "").replace(/"/g, '""')}"`)
       .join(","),
   );
@@ -373,9 +418,21 @@ addLeadButton.addEventListener("click", () => document.querySelector("#import").
 createLeadButton.addEventListener("click", createLead);
 detailFields.statusSelect.addEventListener("change", () => updateSelected({ status: detailFields.statusSelect.value }));
 detailFields.priority.addEventListener("change", () => updateSelected({ priority: detailFields.priority.value }));
+detailFields.followUp.addEventListener("change", () => updateSelected({ followUpDate: detailFields.followUp.value }));
 detailFields.notes.addEventListener("input", () => {
   leads = leads.map((lead) => (lead.id === selectedId ? { ...lead, notes: detailFields.notes.value } : lead));
   saveLeads();
+
+  if (remoteConfigured) {
+    window.clearTimeout(notesSaveTimer);
+    notesSaveTimer = window.setTimeout(() => {
+      fetch("/api/quote-requests", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id: selectedId, updates: { notes: detailFields.notes.value } }),
+      }).catch(() => {});
+    }, 600);
+  }
 });
 deleteButton.addEventListener("click", () => updateSelected({ status: "Archived" }));
 

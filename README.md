@@ -26,4 +26,4 @@ SUPABASE_TABLE=quote_requests
 
 Create a Supabase table named `quote_requests` with columns matching the API payload fields in `lib/quote-store.js`:
 
-`created_at`, `updated_at`, `customer_name`, `contact`, `project_type`, `quantity`, `size`, `dimensions`, `readiness`, `reference_link`, `description`, `ai_possibilities`, `material`, `color`, `finish`, `strength`, `timeline`, `budget`, `delivery`, `location`, `estimate`, `status`, `priority`, `notes`, `source`.
+`created_at`, `updated_at`, `customer_name`, `contact`, `project_type`, `quantity`, `size`, `dimensions`, `readiness`, `reference_link`, `description`, `ai_possibilities`, `material`, `color`, `finish`, `strength`, `timeline`, `budget`, `delivery`, `location`, `estimate`, `status`, `priority`, `follow_up_date`, `notes`, `source`.

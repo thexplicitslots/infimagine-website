@@ -137,6 +137,10 @@
                     <option>Low</option>
                   </select>
                 </label>
+                <label>
+                  <span>Follow-up date</span>
+                  <input data-detail-follow-up type="date" />
+                </label>
               </div>
 
               <dl class="detail-meta">
@@ -149,8 +153,16 @@
                   <dd data-detail-material></dd>
                 </div>
                 <div>
+                  <dt>Finish</dt>
+                  <dd data-detail-finish></dd>
+                </div>
+                <div>
                   <dt>Timeline</dt>
                   <dd data-detail-timeline></dd>
+                </div>
+                <div>
+                  <dt>Follow-up</dt>
+                  <dd data-detail-follow-up-label></dd>
                 </div>
                 <div>
                   <dt>Created</dt>
@@ -219,6 +231,18 @@
             <label>
               <span>Estimate</span>
               <input data-new-estimate placeholder="₹1,500 - ₹3,000" />
+            </label>
+            <label>
+              <span>Material</span>
+              <input data-new-material placeholder="PETG, Nylon, PLA..." />
+            </label>
+            <label>
+              <span>Finish</span>
+              <input data-new-finish placeholder="Matte black, smooth painted..." />
+            </label>
+            <label>
+              <span>Follow-up date</span>
+              <input data-new-follow-up type="date" />
             </label>
             <label class="full-field">
               <span>Idea / WhatsApp text</span>
