@@ -259,6 +259,31 @@
       </main>
     </div>
 
-    <script src="/admin.js?v=20260602-attachments" defer></script>
+    <div class="file-viewer" data-file-viewer hidden>
+      <div class="file-viewer-backdrop" data-viewer-close></div>
+      <section class="file-viewer-panel" role="dialog" aria-modal="true" aria-labelledby="viewer-title">
+        <header class="file-viewer-header">
+          <div>
+            <p class="eyebrow">File viewbox</p>
+            <h2 id="viewer-title" data-viewer-title>Attachment</h2>
+            <span data-viewer-meta></span>
+          </div>
+          <button class="icon-button" type="button" data-viewer-close aria-label="Close file viewer">×</button>
+        </header>
+
+        <div class="viewer-toolbar">
+          <button type="button" data-viewer-reset>Reset</button>
+          <button type="button" data-viewer-rotate>Auto rotate</button>
+          <button type="button" data-viewer-wireframe>Wireframe</button>
+          <a data-viewer-download href="#" target="_blank" rel="noreferrer">Open original</a>
+        </div>
+
+        <div class="viewer-stage" data-viewer-stage>
+          <div class="viewer-loader">Loading file preview...</div>
+        </div>
+      </section>
+    </div>
+
+    <script src="/admin.js?v=20260602-viewbox" defer></script>
   </body>
 </html>

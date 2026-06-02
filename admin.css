@@ -689,6 +689,190 @@ textarea:focus {
   color: var(--muted);
 }
 
+.file-viewer[hidden] {
+  display: none;
+}
+
+.file-viewer {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+}
+
+.file-viewer-backdrop {
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(circle at 50% 30%, rgba(110, 231, 255, 0.1), transparent 34rem),
+    rgba(0, 0, 0, 0.72);
+  backdrop-filter: blur(18px);
+}
+
+.file-viewer-panel {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  grid-template-rows: auto auto minmax(320px, 1fr);
+  gap: 14px;
+  width: min(1120px, 100%);
+  height: min(780px, calc(100svh - 48px));
+  border: 1px solid rgba(110, 231, 255, 0.2);
+  border-radius: 18px;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.07), rgba(255, 255, 255, 0.025)),
+    rgba(3, 10, 14, 0.9);
+  box-shadow:
+    0 34px 120px rgba(0, 0, 0, 0.62),
+    0 0 60px rgba(110, 231, 255, 0.12),
+    inset 0 0 44px rgba(110, 231, 255, 0.032);
+  overflow: hidden;
+}
+
+.file-viewer-panel::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background:
+    linear-gradient(90deg, transparent, rgba(110, 231, 255, 0.18), transparent) top / 100% 1px no-repeat,
+    linear-gradient(rgba(110, 231, 255, 0.055) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(110, 231, 255, 0.045) 1px, transparent 1px);
+  background-size: 100% 1px, 42px 42px, 42px 42px;
+  opacity: 0.42;
+}
+
+.file-viewer-header {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 18px;
+  padding: 20px 20px 0;
+}
+
+.file-viewer-header h2 {
+  margin: 0;
+  font-size: clamp(1.25rem, 3vw, 2rem);
+}
+
+.file-viewer-header span {
+  display: block;
+  margin-top: 5px;
+  color: var(--muted);
+  font-size: 0.82rem;
+}
+
+.viewer-toolbar {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 0 20px;
+}
+
+.viewer-toolbar button,
+.viewer-toolbar a {
+  display: inline-grid;
+  min-height: 36px;
+  align-items: center;
+  border: 1px solid rgba(110, 231, 255, 0.16);
+  border-radius: 999px;
+  background: rgba(110, 231, 255, 0.07);
+  color: rgba(232, 246, 250, 0.86);
+  font: inherit;
+  font-size: 0.74rem;
+  font-weight: 900;
+  padding: 0 13px;
+  text-decoration: none;
+  cursor: pointer;
+  transition:
+    border-color 180ms ease,
+    background 180ms ease,
+    box-shadow 180ms ease,
+    color 180ms ease;
+}
+
+.viewer-toolbar button:hover,
+.viewer-toolbar button.is-active,
+.viewer-toolbar a:hover {
+  border-color: rgba(110, 231, 255, 0.38);
+  background: rgba(110, 231, 255, 0.13);
+  box-shadow: 0 0 22px rgba(110, 231, 255, 0.12);
+  color: var(--white);
+}
+
+.viewer-toolbar button:disabled {
+  cursor: not-allowed;
+  opacity: 0.42;
+}
+
+.viewer-stage {
+  position: relative;
+  z-index: 1;
+  min-height: 0;
+  margin: 0 20px 20px;
+  border: 1px solid rgba(110, 231, 255, 0.12);
+  border-radius: 16px;
+  background:
+    radial-gradient(circle at 50% 40%, rgba(110, 231, 255, 0.08), transparent 28rem),
+    rgba(1, 6, 9, 0.78);
+  overflow: hidden;
+}
+
+.viewer-loader,
+.viewer-fallback {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-content: center;
+  gap: 12px;
+  padding: 24px;
+  color: rgba(232, 246, 250, 0.74);
+  text-align: center;
+}
+
+.viewer-fallback strong {
+  color: var(--white);
+}
+
+.viewer-fallback a {
+  width: max-content;
+  margin: 0 auto;
+  border: 1px solid rgba(110, 231, 255, 0.18);
+  border-radius: 999px;
+  padding: 10px 14px;
+  color: rgba(232, 246, 250, 0.9);
+  text-decoration: none;
+}
+
+.viewer-canvas,
+.viewer-canvas canvas,
+.viewer-image,
+.viewer-frame {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.viewer-image {
+  object-fit: contain;
+  padding: 16px;
+}
+
+.viewer-frame {
+  border: 0;
+  background: rgba(255, 255, 255, 0.92);
+}
+
+.is-viewing-file {
+  overflow: hidden;
+}
+
 .notes-field textarea {
   min-height: 140px;
 }
@@ -834,6 +1018,14 @@ textarea:focus {
   .detail-panel {
     position: static;
   }
+
+  .file-viewer {
+    padding: 14px;
+  }
+
+  .file-viewer-panel {
+    height: calc(100svh - 28px);
+  }
 }
 
 @media (max-width: 700px) {
@@ -876,6 +1068,28 @@ textarea:focus {
   .lead-card,
   .detail-card {
     padding: 14px;
+  }
+
+  .file-viewer {
+    padding: 8px;
+  }
+
+  .file-viewer-panel {
+    grid-template-rows: auto auto minmax(260px, 1fr);
+    height: calc(100svh - 16px);
+    border-radius: 14px;
+  }
+
+  .file-viewer-header {
+    padding: 14px 14px 0;
+  }
+
+  .viewer-toolbar {
+    padding: 0 14px;
+  }
+
+  .viewer-stage {
+    margin: 0 14px 14px;
   }
 
   input,

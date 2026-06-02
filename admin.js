@@ -12,6 +12,15 @@ const emptyState = document.querySelector("[data-empty]");
 const detail = document.querySelector("[data-detail]");
 const connectionTitle = document.querySelector("[data-connection-title]");
 const connectionCopy = document.querySelector("[data-connection-copy]");
+const fileViewer = document.querySelector("[data-file-viewer]");
+const viewerStage = document.querySelector("[data-viewer-stage]");
+const viewerTitle = document.querySelector("[data-viewer-title]");
+const viewerMeta = document.querySelector("[data-viewer-meta]");
+const viewerDownload = document.querySelector("[data-viewer-download]");
+const viewerReset = document.querySelector("[data-viewer-reset]");
+const viewerRotate = document.querySelector("[data-viewer-rotate]");
+const viewerWireframe = document.querySelector("[data-viewer-wireframe]");
+const viewerCloseButtons = [...document.querySelectorAll("[data-viewer-close]")];
 
 const detailFields = {
   type: document.querySelector("[data-detail-type]"),
@@ -114,6 +123,7 @@ let selectedId = leads[0]?.id || null;
 const pipelineStatuses = ["New", "Contacted", "Designing", "Quoted", "Won"];
 let remoteConfigured = false;
 let notesSaveTimer;
+let activeViewer = null;
 
 function loadLeads() {
   const stored = localStorage.getItem(STORAGE_KEY);
@@ -207,6 +217,26 @@ function formatBytes(bytes) {
     index += 1;
   }
   return `${value.toFixed(value >= 10 || index === 0 ? 0 : 1)} ${units[index]}`;
+}
+
+function fileExtension(file) {
+  return String(file.name || file.url || "")
+    .split("?")[0]
+    .split("#")[0]
+    .split(".")
+    .pop()
+    .toLowerCase();
+}
+
+function fileKind(file) {
+  const type = String(file.type || "").toLowerCase();
+  const extension = fileExtension(file);
+
+  if (extension === "stl" || type.includes("stl")) return "stl";
+  if (type.startsWith("image/") || ["png", "jpg", "jpeg", "webp", "gif"].includes(extension)) return "image";
+  if (type.includes("pdf") || extension === "pdf") return "pdf";
+  if (["obj", "step", "stp", "3mf"].includes(extension)) return "cad";
+  return "file";
 }
 
 function statusClass(status) {
@@ -373,6 +403,7 @@ function renderAttachments(attachments) {
       const meta = escapeHtml([file.type, file.size ? formatBytes(file.size) : ""].filter(Boolean).join(" · "));
       const href = file.url ? escapeHtml(file.url) : "";
       const label = file.stored ? "Uploaded" : "Captured";
+      const encodedFile = encodeURIComponent(JSON.stringify(file));
 
       if (href) {
         return `
@@ -381,6 +412,7 @@ function renderAttachments(attachments) {
             <span>${meta}</span>
             <em>${label}</em>
             <div class="attachment-actions">
+              <button type="button" data-view-file="${encodedFile}">View</button>
               <a href="${href}" target="_blank" rel="noreferrer">Open file</a>
               <button type="button" data-copy-file-url="${href}">Copy link</button>
             </div>
@@ -400,8 +432,18 @@ function renderAttachments(attachments) {
 }
 
 async function handleAttachmentAction(event) {
+  const viewButton = event.target.closest("[data-view-file]");
   const openButton = event.target.closest("[data-file-url]");
   const copyButton = event.target.closest("[data-copy-file-url]");
+
+  if (viewButton) {
+    try {
+      openFileViewer(JSON.parse(decodeURIComponent(viewButton.dataset.viewFile)));
+    } catch {
+      window.alert("Could not open this file preview.");
+    }
+    return;
+  }
 
   if (openButton) {
     const url = openButton.dataset.fileUrl;
@@ -421,6 +463,181 @@ async function handleAttachmentAction(event) {
     } catch {
       window.prompt("Copy file link", url);
     }
+  }
+}
+
+function clearViewer() {
+  if (activeViewer?.resizeObserver) activeViewer.resizeObserver.disconnect();
+  if (activeViewer?.animationFrame) cancelAnimationFrame(activeViewer.animationFrame);
+  if (activeViewer?.renderer) activeViewer.renderer.dispose();
+  if (activeViewer?.geometry) activeViewer.geometry.dispose();
+  if (activeViewer?.material) activeViewer.material.dispose();
+  if (activeViewer?.controls) activeViewer.controls.dispose();
+  activeViewer = null;
+  viewerStage.innerHTML = '<div class="viewer-loader">Loading file preview...</div>';
+}
+
+function closeFileViewer() {
+  fileViewer.hidden = true;
+  document.body.classList.remove("is-viewing-file");
+  clearViewer();
+}
+
+function setViewerFallback(file, message) {
+  viewerStage.innerHTML = `
+    <div class="viewer-fallback">
+      <strong>${escapeHtml(message)}</strong>
+      <p>${escapeHtml(file.name || "Attachment")}</p>
+      <a href="${escapeHtml(file.url)}" target="_blank" rel="noreferrer">Open original file</a>
+    </div>
+  `;
+}
+
+function openFileViewer(file) {
+  if (!file?.url) return;
+
+  clearViewer();
+  const kind = fileKind(file);
+  viewerTitle.textContent = file.name || "Attachment";
+  viewerMeta.textContent = [kind.toUpperCase(), file.size ? formatBytes(file.size) : "", file.type || ""].filter(Boolean).join(" · ");
+  viewerDownload.href = file.url;
+  viewerRotate.classList.remove("is-active");
+  viewerWireframe.classList.remove("is-active");
+  viewerRotate.disabled = kind !== "stl";
+  viewerWireframe.disabled = kind !== "stl";
+  viewerReset.disabled = kind !== "stl";
+  fileViewer.hidden = false;
+  document.body.classList.add("is-viewing-file");
+
+  if (kind === "stl") {
+    renderStlViewer(file);
+    return;
+  }
+
+  if (kind === "image") {
+    viewerStage.innerHTML = `<img class="viewer-image" src="${escapeHtml(file.url)}" alt="${escapeHtml(file.name || "Uploaded image")}" />`;
+    return;
+  }
+
+  if (kind === "pdf") {
+    viewerStage.innerHTML = `<iframe class="viewer-frame" src="${escapeHtml(file.url)}" title="${escapeHtml(file.name || "Uploaded PDF")}"></iframe>`;
+    return;
+  }
+
+  setViewerFallback(file, kind === "cad" ? "Inline preview is currently available for STL files." : "This file type is ready to open externally.");
+}
+
+async function renderStlViewer(file) {
+  viewerStage.innerHTML = '<div class="viewer-loader">Preparing 3D viewbox...</div>';
+
+  try {
+    const [THREE, { OrbitControls }, { STLLoader }] = await Promise.all([
+      import("https://esm.sh/three@0.160.0"),
+      import("https://esm.sh/three@0.160.0/examples/jsm/controls/OrbitControls.js"),
+      import("https://esm.sh/three@0.160.0/examples/jsm/loaders/STLLoader.js"),
+    ]);
+
+    viewerStage.innerHTML = '<div class="viewer-canvas" data-viewer-canvas></div>';
+    const canvasHost = viewerStage.querySelector("[data-viewer-canvas]");
+    const scene = new THREE.Scene();
+    scene.background = new THREE.Color(0x03090d);
+
+    const camera = new THREE.PerspectiveCamera(45, canvasHost.clientWidth / canvasHost.clientHeight, 0.1, 100000);
+    const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+    renderer.setSize(canvasHost.clientWidth, canvasHost.clientHeight);
+    renderer.outputColorSpace = THREE.SRGBColorSpace;
+    canvasHost.append(renderer.domElement);
+
+    const controls = new OrbitControls(camera, renderer.domElement);
+    controls.enableDamping = true;
+    controls.dampingFactor = 0.08;
+    controls.autoRotateSpeed = 1.3;
+
+    scene.add(new THREE.HemisphereLight(0xcff8ff, 0x081014, 2.7));
+    const keyLight = new THREE.DirectionalLight(0x9fefff, 3.1);
+    keyLight.position.set(2.5, 3.8, 4.5);
+    scene.add(keyLight);
+    const rimLight = new THREE.DirectionalLight(0xffffff, 1.35);
+    rimLight.position.set(-3, 1.8, -2);
+    scene.add(rimLight);
+
+    const grid = new THREE.GridHelper(160, 40, 0x2edaff, 0x12313a);
+    grid.material.transparent = true;
+    grid.material.opacity = 0.18;
+    scene.add(grid);
+
+    const loader = new STLLoader();
+    loader.load(
+      file.url,
+      (geometry) => {
+        geometry.computeBoundingBox();
+        geometry.computeBoundingSphere();
+        geometry.center();
+
+        const radius = Math.max(geometry.boundingSphere?.radius || 1, 1);
+        const material = new THREE.MeshStandardMaterial({
+          color: 0xdafcff,
+          metalness: 0.22,
+          roughness: 0.38,
+          emissive: 0x06242b,
+          emissiveIntensity: 0.22,
+        });
+        const mesh = new THREE.Mesh(geometry, material);
+        mesh.rotation.x = -Math.PI / 2;
+        scene.add(mesh);
+
+        grid.scale.setScalar(Math.max(radius / 80, 0.5));
+        camera.position.set(radius * 1.45, radius * 1.1, radius * 2.15);
+        camera.near = Math.max(radius / 1000, 0.01);
+        camera.far = radius * 30;
+        camera.updateProjectionMatrix();
+        controls.target.set(0, 0, 0);
+        controls.update();
+
+        activeViewer = {
+          ...activeViewer,
+          camera,
+          controls,
+          geometry,
+          material,
+          mesh,
+          renderer,
+          reset() {
+            controls.autoRotate = false;
+            material.wireframe = false;
+            camera.position.set(radius * 1.45, radius * 1.1, radius * 2.15);
+            controls.target.set(0, 0, 0);
+            controls.update();
+            viewerRotate.classList.remove("is-active");
+            viewerWireframe.classList.remove("is-active");
+          },
+        };
+      },
+      undefined,
+      () => {
+        setViewerFallback(file, "This STL could not be loaded in the viewbox.");
+      },
+    );
+
+    const resizeObserver = new ResizeObserver(() => {
+      if (!canvasHost.clientWidth || !canvasHost.clientHeight) return;
+      camera.aspect = canvasHost.clientWidth / canvasHost.clientHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(canvasHost.clientWidth, canvasHost.clientHeight);
+    });
+    resizeObserver.observe(canvasHost);
+
+    function animate() {
+      activeViewer.animationFrame = requestAnimationFrame(animate);
+      controls.update();
+      renderer.render(scene, camera);
+    }
+
+    activeViewer = { controls, renderer, resizeObserver };
+    animate();
+  } catch (error) {
+    setViewerFallback(file, "3D viewer could not load. Open the original STL instead.");
   }
 }
 
@@ -529,6 +746,18 @@ exportButton.addEventListener("click", exportCsv);
 addLeadButton.addEventListener("click", () => document.querySelector("#import").scrollIntoView({ behavior: "smooth" }));
 createLeadButton.addEventListener("click", createLead);
 detailFields.attachments.addEventListener("click", handleAttachmentAction);
+viewerCloseButtons.forEach((button) => button.addEventListener("click", closeFileViewer));
+viewerReset.addEventListener("click", () => activeViewer?.reset?.());
+viewerRotate.addEventListener("click", () => {
+  if (!activeViewer?.controls) return;
+  activeViewer.controls.autoRotate = !activeViewer.controls.autoRotate;
+  viewerRotate.classList.toggle("is-active", activeViewer.controls.autoRotate);
+});
+viewerWireframe.addEventListener("click", () => {
+  if (!activeViewer?.material) return;
+  activeViewer.material.wireframe = !activeViewer.material.wireframe;
+  viewerWireframe.classList.toggle("is-active", activeViewer.material.wireframe);
+});
 detailFields.statusSelect.addEventListener("change", () => updateSelected({ status: detailFields.statusSelect.value }));
 detailFields.priority.addEventListener("change", () => updateSelected({ priority: detailFields.priority.value }));
 detailFields.followUp.addEventListener("change", () => updateSelected({ followUpDate: detailFields.followUp.value }));
@@ -548,6 +777,9 @@ detailFields.notes.addEventListener("input", () => {
   }
 });
 deleteButton.addEventListener("click", () => updateSelected({ status: "Archived" }));
+window.addEventListener("keydown", (event) => {
+  if (event.key === "Escape" && !fileViewer.hidden) closeFileViewer();
+});
 
 render();
 loadRemoteLeads();
