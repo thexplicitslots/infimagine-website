@@ -158,19 +158,13 @@ let notesSaveTimer;
 let activeViewer = null;
 
 const materialProfiles = [
-  { match: "peek", label: "PEEK", density: 1.3, rate: 25000, flow: 18 },
-  { match: "nylon", label: "Nylon", density: 1.08, rate: 3200, flow: 34 },
-  { match: "flexible", label: "Flexible", density: 1.2, rate: 2600, flow: 22 },
-  { match: "abs", label: "ABS/ASA", density: 1.04, rate: 1500, flow: 38 },
-  { match: "asa", label: "ABS/ASA", density: 1.04, rate: 1500, flow: 38 },
-  { match: "petg", label: "PETG", density: 1.27, rate: 1200, flow: 42 },
-  { match: "pla", label: "PLA", density: 1.24, rate: 900, flow: 46 },
-];
-
-const sizeFallbacks = [
-  { match: "large", dimensions: [32, 22, 16], confidence: "Low" },
-  { match: "medium", dimensions: [18, 12, 8], confidence: "Medium" },
-  { match: "small", dimensions: [8, 6, 4], confidence: "Medium" },
+  { match: "peek", label: "PEEK", rate: 25000 },
+  { match: "nylon", label: "Nylon", rate: 3200 },
+  { match: "flexible", label: "Flexible", rate: 2600 },
+  { match: "abs", label: "ABS/ASA", rate: 1500 },
+  { match: "asa", label: "ABS/ASA", rate: 1500 },
+  { match: "petg", label: "PETG", rate: 1200 },
+  { match: "pla", label: "PLA", rate: 900 },
 ];
 
 function loadLeads() {
@@ -255,14 +249,6 @@ function numericEstimate(value) {
   return numbers.reduce((sum, item) => sum + Number(item.replace(/,/g, "")), 0) / Math.max(numbers.length, 1);
 }
 
-function estimateRange(value) {
-  const numbers = String(value).match(/\d[\d,]*/g) || [];
-  const parsed = numbers.map((item) => Number(item.replace(/,/g, ""))).filter(Boolean);
-  if (!parsed.length) return null;
-  if (parsed.length === 1) return [parsed[0], parsed[0]];
-  return [Math.min(...parsed), Math.max(...parsed)];
-}
-
 function formatBytes(bytes) {
   if (!bytes) return "0 KB";
   const units = ["B", "KB", "MB", "GB"];
@@ -283,26 +269,15 @@ function formatCurrency(value) {
   }).format(value);
 }
 
-function parseQuantity(value) {
-  const text = String(value || "");
-  if (text.includes("+")) return Number(text.match(/\d+/)?.[0] || 1);
-  const numbers = text.match(/\d+/g)?.map(Number) || [];
-  if (!numbers.length) return 1;
-  if (numbers.length === 1) return Math.max(numbers[0], 1);
-  return Math.max(Math.round((numbers[0] + numbers[1]) / 2), 1);
-}
-
 function materialProfile(value) {
   const text = String(value || "").toLowerCase();
   return materialProfiles.find((profile) => text.includes(profile.match)) || {
     label: "Recommended",
-    density: 1.2,
     rate: 1300,
-    flow: 40,
   };
 }
 
-function parseDimensions(value, size) {
+function parseDimensions(value) {
   const text = String(value || "").toLowerCase();
   const numbers = text.match(/\d+(?:\.\d+)?/g)?.slice(0, 3).map(Number) || [];
   let unit = "cm";
@@ -313,67 +288,30 @@ function parseDimensions(value, size) {
   if (numbers.length >= 3) {
     const multiplier = unit === "mm" ? 0.1 : unit === "in" ? 2.54 : 1;
     return {
-      confidence: "High",
       dimensions: numbers.map((number) => Math.max(number * multiplier, 0.1)),
       source: "customer dimensions",
     };
   }
 
-  const fallback = sizeFallbacks.find((item) => String(size || "").toLowerCase().includes(item.match)) || sizeFallbacks[2];
-  return {
-    confidence: fallback.confidence,
-    dimensions: fallback.dimensions,
-    source: "size-class fallback",
-  };
-}
-
-function infillFactor(lead) {
-  const text = `${lead.strength || ""} ${lead.finish || ""} ${lead.type || ""}`.toLowerCase();
-  if (text.includes("strong") || text.includes("functional") || text.includes("outdoor")) return 0.26;
-  if (text.includes("balanced") || text.includes("prototype") || text.includes("utility")) return 0.2;
-  return 0.14;
-}
-
-function complexityFactor(lead) {
-  const text = `${lead.type || ""} ${lead.finish || ""} ${lead.description || ""}`.toLowerCase();
-  let factor = 1;
-  if (text.includes("smooth") || text.includes("paint")) factor += 0.18;
-  if (text.includes("miniature") || text.includes("model")) factor += 0.16;
-  if (text.includes("prototype") || text.includes("functional")) factor += 0.12;
-  return factor;
+  return null;
 }
 
 function productionEstimate(lead) {
-  const parsed = parseDimensions(lead.dimensions, lead.size);
-  const [length, width, height] = parsed.dimensions;
+  const parsed = parseDimensions(lead.dimensions);
   const profile = materialProfile(lead.material);
-  const quantity = parseQuantity(lead.quantity);
-  const shellFactor = 1.18;
-  const supportFactor = String(lead.readiness || lead.description || "").toLowerCase().includes("support") ? 1.18 : 1.1;
-  const occupiedVolume = length * width * height * infillFactor(lead) * shellFactor;
-  const gramsEach = Math.max(occupiedVolume * profile.density * supportFactor, 8);
-  const totalGrams = gramsEach * quantity;
-  const filamentCost = Math.max((totalGrams / 1000) * profile.rate * 1.12, 25);
-  const hoursEach = Math.max((gramsEach / profile.flow) * complexityFactor(lead) + 0.6, 1);
-  const totalHours = hoursEach * quantity;
-  const machineCost = totalHours * 95;
-  const finishingCost = totalHours * (String(lead.finish || "").toLowerCase().includes("smooth") ? 170 : 80);
-  const setupCost = parsed.confidence === "High" ? 350 : 550;
-  const suggestedLow = Math.round((filamentCost + machineCost + finishingCost + setupCost) / 50) * 50;
-  const suggestedHigh = Math.round((suggestedLow * 1.45) / 50) * 50;
-  const websiteRange = estimateRange(lead.estimate);
+  const stlFiles = (lead.attachments || []).filter((file) => file.url && fileKind(file) === "stl");
 
   return {
-    confidence: parsed.confidence,
-    dimensions: `${length.toFixed(1)} x ${width.toFixed(1)} x ${height.toFixed(1)} cm`,
-    filament: formatCurrency(filamentCost),
-    note: `Based on ${parsed.source}, ${quantity} piece${quantity > 1 ? "s" : ""}, ${profile.label}, and approximate infill/shell assumptions. Final numbers need slicer confirmation from the approved STL.`,
-    price: websiteRange
-      ? `${formatCurrency(Math.max(suggestedLow, websiteRange[0]))} - ${formatCurrency(Math.max(suggestedHigh, websiteRange[1]))}`
-      : `${formatCurrency(suggestedLow)} - ${formatCurrency(suggestedHigh)}`,
+    confidence: parsed ? "Known" : stlFiles.length ? "STL ready" : "Review",
+    dimensions: parsed ? `${parsed.dimensions.map((value) => value.toFixed(1)).join(" x ")} cm` : "Needs measured dimensions or STL analysis",
+    filament: "Requires slicer output",
+    note: stlFiles.length
+      ? "An STL is attached. Use View to inspect geometry, then slice it for exact filament weight, print time, support material, and machine cost."
+      : "Exact weight, filament cost, and print time require a final STL sliced with nozzle, layer height, infill, supports, wall count, and printer profile. The old rough guesses have been removed.",
+    price: lead.estimate || "Quote after slicer review",
     rate: `${profile.label} · ${formatCurrency(profile.rate)}/kg`,
-    time: `${totalHours < 10 ? totalHours.toFixed(1) : Math.round(totalHours)} hr`,
-    weight: `${Math.round(totalGrams)} g`,
+    time: "Requires slicer output",
+    weight: "Requires slicer output",
   };
 }
 
@@ -552,8 +490,8 @@ function renderDetail() {
 
 function renderProductionEstimate(lead) {
   const estimate = productionEstimate(lead);
-  detailFields.productionConfidence.textContent = `${estimate.confidence} confidence`;
-  detailFields.productionConfidence.className = `confidence-pill confidence-${estimate.confidence.toLowerCase()}`;
+  detailFields.productionConfidence.textContent = estimate.confidence;
+  detailFields.productionConfidence.className = `confidence-pill confidence-${estimate.confidence.toLowerCase().replace(/\s+/g, "-")}`;
   detailFields.productionDimensions.textContent = estimate.dimensions;
   detailFields.productionWeight.textContent = estimate.weight;
   detailFields.productionFilament.textContent = estimate.filament;

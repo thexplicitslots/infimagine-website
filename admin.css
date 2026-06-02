@@ -624,9 +624,24 @@ textarea:focus {
   color: var(--green);
 }
 
+.confidence-known {
+  border-color: rgba(139, 207, 135, 0.34);
+  color: var(--green);
+}
+
 .confidence-medium {
   border-color: rgba(110, 231, 255, 0.3);
   color: var(--cyan);
+}
+
+.confidence-stl-ready {
+  border-color: rgba(110, 231, 255, 0.3);
+  color: var(--cyan);
+}
+
+.confidence-review {
+  border-color: rgba(255, 255, 255, 0.16);
+  color: rgba(232, 246, 250, 0.68);
 }
 
 .production-grid {
