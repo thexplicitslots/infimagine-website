@@ -1,4 +1,4 @@
-const { uploadFiles } = require("../lib/upload-store");
+const { createSignedUploadFiles, uploadFiles } = require("../lib/upload-store");
 
 function sendJson(response, statusCode, payload) {
   response.statusCode = statusCode;
@@ -36,7 +36,9 @@ module.exports = async function handler(request, response) {
     }
 
     const payload = await readPayload(request);
-    const result = await uploadFiles(payload.files || []);
+    const result = payload.mode === "sign"
+      ? await createSignedUploadFiles(payload.files || [])
+      : await uploadFiles(payload.files || []);
 
     return sendJson(response, result.configured ? 201 : 202, {
       configured: result.configured,

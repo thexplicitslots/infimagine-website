@@ -21,8 +21,8 @@ let currentQuoteStep = 1;
 let currentEstimateRange = "₹799 - ₹1,499";
 let currentAttachments = [];
 const maxUploadFiles = 4;
-const maxUploadBytes = 4 * 1024 * 1024;
-const maxUploadTotalBytes = 8 * 1024 * 1024;
+const maxUploadBytes = 100 * 1024 * 1024;
+const maxUploadTotalBytes = 160 * 1024 * 1024;
 
 const revealTargets = [...new Set([
   ".statement-grid",
@@ -180,7 +180,7 @@ function updateFileSummary() {
   const names = files.map((file) => `${file.name} (${formatBytes(file.size)})`).join(", ");
   const clipped = fileInput.files.length > maxUploadFiles ? ` Only the first ${maxUploadFiles} files will be attached.` : "";
   const sizeWarning = totalBytes > maxUploadTotalBytes
-    ? " Large files will be listed in the request and can be sent directly on WhatsApp."
+    ? " Very large files will be listed in the request and can be sent directly on WhatsApp."
     : "";
   fileSummary.textContent = `${names}.${clipped}${sizeWarning}`;
   currentAttachments = files.map((file) => ({
@@ -229,17 +229,61 @@ async function uploadAttachments() {
   submitStatus.textContent = "Uploading your reference files...";
 
   try {
-    const payloadFiles = await Promise.all(files.map(fileToPayload));
     const response = await fetch("/api/upload-files", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ files: payloadFiles }),
+      body: JSON.stringify({
+        mode: "sign",
+        files: files.map((file) => ({
+          name: file.name,
+          type: file.type || "application/octet-stream",
+          size: file.size,
+        })),
+      }),
     });
     const result = await response.json();
 
     if (!response.ok) throw new Error(result.error || "Upload failed.");
+    if (!result.configured) {
+      currentAttachments = result.files?.length ? result.files : fallback;
+      updateEstimate();
+      return currentAttachments;
+    }
 
-    currentAttachments = result.files?.length ? result.files : fallback;
+    const signedFiles = result.files || [];
+    const uploaded = [];
+
+    for (let index = 0; index < files.length; index += 1) {
+      const file = files[index];
+      const signed = signedFiles[index];
+      if (!signed?.uploadUrl) throw new Error(`Could not prepare ${file.name}.`);
+
+      submitStatus.textContent = `Uploading ${file.name}...`;
+      const uploadResponse = await fetch(signed.uploadUrl, {
+        method: "PUT",
+        headers: {
+          "Content-Type": file.type || "application/octet-stream",
+          "cache-control": "3600",
+        },
+        body: file,
+      });
+
+      if (!uploadResponse.ok) {
+        let uploadError = "";
+        try {
+          const data = await uploadResponse.json();
+          uploadError = data?.message || data?.error || "";
+        } catch {
+          uploadError = await uploadResponse.text();
+        }
+        throw new Error(uploadError || `Could not upload ${file.name}.`);
+      }
+
+      const { uploadUrl, token, ...storedFile } = signed;
+      uploaded.push(storedFile);
+    }
+
+    currentAttachments = uploaded.length ? uploaded : fallback;
     updateEstimate();
     return currentAttachments;
   } catch {
