@@ -55,6 +55,13 @@ function workerPayload(quote, attachment, signedUrl) {
   };
 }
 
+function callbackUrl(request) {
+  const host = request.headers["x-forwarded-host"] || request.headers.host || process.env.VERCEL_URL || "";
+  const protocol = request.headers["x-forwarded-proto"] || "https";
+  if (!host) return "";
+  return `${protocol}://${host}/api/slice-callback`;
+}
+
 module.exports = async function handler(request, response) {
   let payload = {};
   try {
@@ -106,7 +113,11 @@ module.exports = async function handler(request, response) {
       sliced_at: new Date().toISOString(),
     });
     const signedUrl = await createSignedStorageUrl(attachment.path);
-    const worker = await callSlicerWorker(workerPayload(quote, attachment, signedUrl));
+    const worker = await callSlicerWorker({
+      ...workerPayload(quote, attachment, signedUrl),
+      async: true,
+      callbackUrl: callbackUrl(request),
+    });
     const workerStatus = worker.result.slice_status;
     const finalStatus = ["failed", "queued"].includes(workerStatus) ? workerStatus : "complete";
     const sliceUpdates = {
