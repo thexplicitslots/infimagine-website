@@ -174,9 +174,19 @@
                 <div class="section-title-row">
                   <div>
                     <h3>Print production estimate</h3>
-                    <p>Known inputs only. Exact production numbers require slicing the approved STL.</p>
+                    <p data-production-summary>Known inputs only. Exact production numbers require slicing the approved STL.</p>
                   </div>
                   <span data-production-confidence></span>
+                </div>
+                <div class="production-headline">
+                  <div>
+                    <span>Production baseline</span>
+                    <strong data-production-baseline></strong>
+                  </div>
+                  <div>
+                    <span>Machine profile</span>
+                    <strong data-production-profile></strong>
+                  </div>
                 </div>
                 <div class="production-grid">
                   <div>
@@ -200,10 +210,11 @@
                     <strong data-production-rate></strong>
                   </div>
                   <div>
-                    <span>Suggested quote</span>
+                    <span>Customer estimate</span>
                     <strong data-production-price></strong>
                   </div>
                 </div>
+                <div class="production-breakdown" data-production-breakdown></div>
                 <p class="production-note" data-production-note></p>
               </div>
 

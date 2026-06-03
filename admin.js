@@ -40,12 +40,16 @@ const detailFields = {
   possibilities: document.querySelector("[data-detail-possibilities]"),
   attachments: document.querySelector("[data-detail-attachments]"),
   productionConfidence: document.querySelector("[data-production-confidence]"),
+  productionSummary: document.querySelector("[data-production-summary]"),
+  productionBaseline: document.querySelector("[data-production-baseline]"),
+  productionProfile: document.querySelector("[data-production-profile]"),
   productionDimensions: document.querySelector("[data-production-dimensions]"),
   productionWeight: document.querySelector("[data-production-weight]"),
   productionFilament: document.querySelector("[data-production-filament]"),
   productionTime: document.querySelector("[data-production-time]"),
   productionRate: document.querySelector("[data-production-rate]"),
   productionPrice: document.querySelector("[data-production-price]"),
+  productionBreakdown: document.querySelector("[data-production-breakdown]"),
   productionNote: document.querySelector("[data-production-note]"),
   notes: document.querySelector("[data-detail-notes]"),
   whatsapp: document.querySelector("[data-detail-whatsapp]"),
@@ -297,46 +301,123 @@ function parseDimensions(value) {
   return null;
 }
 
+function formatDuration(minutes) {
+  const value = Math.round(Number(minutes || 0));
+  if (!value) return "";
+  const hours = Math.floor(value / 60);
+  const mins = value % 60;
+  if (!hours) return `${mins} min`;
+  if (!mins) return `${hours} hr`;
+  return `${hours} hr ${mins} min`;
+}
+
+function parseDurationTextMinutes(text) {
+  const value = String(text || "").toLowerCase();
+  const days = Number(value.match(/(\d+(?:\.\d+)?)\s*d/)?.[1] || 0);
+  const hours = Number(value.match(/(\d+(?:\.\d+)?)\s*h/)?.[1] || 0);
+  const minutes = Number(value.match(/(\d+(?:\.\d+)?)\s*m/)?.[1] || 0);
+  const seconds = Number(value.match(/(\d+(?:\.\d+)?)\s*s/)?.[1] || 0);
+  const total = days * 1440 + hours * 60 + minutes + seconds / 60;
+  return total ? Math.round(total) : 0;
+}
+
+function estimateProductionBaseline({ filamentCost, printTimeMinutes, profile }) {
+  const materialCost = Number(filamentCost || 0);
+  const minutes = Number(printTimeMinutes || 0);
+  if (!materialCost && !minutes) return null;
+
+  const machineRatePerHour = /voron/i.test(profile || "") ? 180 : 150;
+  const machineCost = minutes ? Math.ceil((minutes / 60) * machineRatePerHour) : 0;
+  const setupCost = 250;
+  const qaCost = 150;
+  const directCost = materialCost + machineCost + setupCost + qaCost;
+  const suggestedMinimum = Math.ceil(directCost * 1.85 / 50) * 50;
+
+  return {
+    directCost,
+    machineCost,
+    machineRatePerHour,
+    materialCost,
+    qaCost,
+    setupCost,
+    suggestedMinimum,
+  };
+}
+
+function productionBreakdownItems(baseline) {
+  if (!baseline) return [];
+  return [
+    ["Material", formatCurrency(baseline.materialCost)],
+    ["Machine time", `${formatCurrency(baseline.machineCost)} @ ${formatCurrency(baseline.machineRatePerHour)}/hr`],
+    ["Setup", formatCurrency(baseline.setupCost)],
+    ["QA / handling", formatCurrency(baseline.qaCost)],
+    ["Direct cost", formatCurrency(baseline.directCost)],
+  ];
+}
+
 function productionEstimate(lead) {
   const storedEstimate = slicerEstimates[lead.id];
   const parsed = parseDimensions(lead.dimensions);
   const profile = materialProfile(lead.material);
   const stlFiles = (lead.attachments || []).filter((file) => file.url && fileKind(file) === "stl");
+  const dimensions = parsed ? `${parsed.dimensions.map((value) => value.toFixed(1)).join(" x ")} cm` : "Use STL viewbox for geometry";
 
   if (storedEstimate) {
+    const baseline = estimateProductionBaseline({
+      filamentCost: storedEstimate.cost,
+      printTimeMinutes: parseDurationTextMinutes(storedEstimate.printTime),
+      profile: storedEstimate.profile || "Voron 2.4 350 estimate",
+    });
     return {
+      baseline: baseline ? formatCurrency(baseline.suggestedMinimum) : "Needs slicer cost/time",
+      breakdown: productionBreakdownItems(baseline),
       confidence: "Sliced",
-      dimensions: parsed ? `${parsed.dimensions.map((value) => value.toFixed(1)).join(" x ")} cm` : "Use STL viewbox for geometry",
+      dimensions,
       filament: storedEstimate.cost ? formatCurrency(storedEstimate.cost) : "Not reported by slicer",
       note: `PrusaSlicer CLI result from ${storedEstimate.fileName}. Profile and printer settings determine these values.`,
+      profile: storedEstimate.profile || "Voron 2.4 350 estimate",
       price: lead.estimate || "Quote after review",
       rate: `${profile.label} · ${formatCurrency(profile.rate)}/kg`,
+      summary: "Sliced output is available. Use the baseline as an internal floor before final margin and complexity review.",
       time: storedEstimate.printTime || "Not reported by slicer",
       weight: storedEstimate.grams ? `${Math.round(storedEstimate.grams)} g` : "Not reported by slicer",
     };
   }
 
   if (lead.slice?.status === "complete") {
+    const baseline = estimateProductionBaseline({
+      filamentCost: lead.slice.filamentCost,
+      printTimeMinutes: lead.slice.printTimeMinutes,
+      profile: lead.slice.profile,
+    });
     return {
+      baseline: baseline ? formatCurrency(baseline.suggestedMinimum) : "Needs slicer cost/time",
+      breakdown: productionBreakdownItems(baseline),
       confidence: "Sliced",
-      dimensions: parsed ? `${parsed.dimensions.map((value) => value.toFixed(1)).join(" x ")} cm` : "Use STL viewbox for geometry",
+      dimensions,
       filament: lead.slice.filamentCost ? formatCurrency(lead.slice.filamentCost) : "Not reported by worker",
       note: `External slicer worker result${lead.slice.slicedAt ? ` from ${formatDate(lead.slice.slicedAt)}` : ""}. Profile and printer settings determine these values.`,
+      profile: lead.slice.profile || "Voron 2.4 350 estimate",
       price: lead.estimate || "Quote after review",
       rate: `${profile.label} · ${formatCurrency(profile.rate)}/kg`,
-      time: lead.slice.printTimeMinutes ? `${Math.round(lead.slice.printTimeMinutes)} min` : "Not reported by worker",
+      summary: "Verified slicer output is ready. Review geometry, finish, supports, and customer value before confirming price.",
+      time: lead.slice.printTimeMinutes ? formatDuration(lead.slice.printTimeMinutes) : "Not reported by worker",
       weight: lead.slice.filamentGrams ? `${Math.round(lead.slice.filamentGrams)} g` : "Not reported by worker",
     };
   }
 
   if (lead.slice?.status === "queued") {
     return {
+      baseline: "Queued",
+      breakdown: [["Next", "Wait for worker or retry Slice estimate"]],
       confidence: "Queued",
-      dimensions: parsed ? `${parsed.dimensions.map((value) => value.toFixed(1)).join(" x ")} cm` : "Use STL viewbox for geometry",
+      dimensions,
       filament: "Waiting for worker",
       note: "Slicing queued. Refresh the request after the worker updates the slice fields.",
+      profile: lead.slice.profile || "Voron 2.4 350 estimate",
       price: lead.estimate || "Quote after review",
       rate: `${profile.label} · ${formatCurrency(profile.rate)}/kg`,
+      summary: "The file has been sent to the slicer worker. Production numbers will appear after slicing completes.",
       time: "Waiting for worker",
       weight: "Waiting for worker",
     };
@@ -344,26 +425,36 @@ function productionEstimate(lead) {
 
   if (lead.slice?.status === "failed" || lead.slice?.status === "not_configured") {
     return {
+      baseline: "Blocked",
+      breakdown: [["Issue", lead.slice.error || "Slicer worker not configured"]],
       confidence: "Review",
       dimensions: parsed ? `${parsed.dimensions.map((value) => value.toFixed(1)).join(" x ")} cm` : "Needs measured dimensions or STL analysis",
       filament: "Requires slicer output",
       note: lead.slice.error ? `Slicing failed: ${lead.slice.error}` : "Slicer worker not configured",
+      profile: lead.slice.profile || "Voron 2.4 350 estimate",
       price: lead.estimate || "Quote after slicer review",
       rate: `${profile.label} · ${formatCurrency(profile.rate)}/kg`,
+      summary: "Slicing could not complete. Inspect the STL scale/orientation, then rerun the estimate.",
       time: "Requires slicer output",
       weight: "Requires slicer output",
     };
   }
 
   return {
+    baseline: stlFiles.length ? "Ready to slice" : "Needs STL",
+    breakdown: stlFiles.length
+      ? [["Next", "Open the STL viewbox, confirm scale, then run Slice estimate"]]
+      : [["Next", "Ask customer for final STL/3MF or measured dimensions"]],
     confidence: parsed ? "Known" : stlFiles.length ? "STL ready" : "Review",
     dimensions: parsed ? `${parsed.dimensions.map((value) => value.toFixed(1)).join(" x ")} cm` : "Needs measured dimensions or STL analysis",
     filament: "Requires slicer output",
     note: stlFiles.length
       ? "An STL is attached. Use View to inspect geometry, then slice it for exact filament weight, print time, support material, and machine cost."
       : "Exact weight, filament cost, and print time require a final STL sliced with nozzle, layer height, infill, supports, wall count, and printer profile. The old rough guesses have been removed.",
+    profile: "Voron 2.4 350 estimate",
     price: lead.estimate || "Quote after slicer review",
     rate: `${profile.label} · ${formatCurrency(profile.rate)}/kg`,
+    summary: stlFiles.length ? "STL is available. Run the slicer to unlock production cost, time, and filament weight." : "Waiting for a printable 3D file before production numbers can be trusted.",
     time: "Requires slicer output",
     weight: "Requires slicer output",
   };
@@ -546,12 +637,23 @@ function renderProductionEstimate(lead) {
   const estimate = productionEstimate(lead);
   detailFields.productionConfidence.textContent = estimate.confidence;
   detailFields.productionConfidence.className = `confidence-pill confidence-${estimate.confidence.toLowerCase().replace(/\s+/g, "-")}`;
+  detailFields.productionSummary.textContent = estimate.summary;
+  detailFields.productionBaseline.textContent = estimate.baseline;
+  detailFields.productionProfile.textContent = estimate.profile;
   detailFields.productionDimensions.textContent = estimate.dimensions;
   detailFields.productionWeight.textContent = estimate.weight;
   detailFields.productionFilament.textContent = estimate.filament;
   detailFields.productionTime.textContent = estimate.time;
   detailFields.productionRate.textContent = estimate.rate;
   detailFields.productionPrice.textContent = estimate.price;
+  detailFields.productionBreakdown.innerHTML = (estimate.breakdown || [])
+    .map(([label, value]) => `
+      <div>
+        <span>${escapeHtml(label)}</span>
+        <strong>${escapeHtml(value)}</strong>
+      </div>
+    `)
+    .join("");
   detailFields.productionNote.textContent = estimate.note;
 }
 
