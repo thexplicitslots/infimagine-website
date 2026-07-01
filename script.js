@@ -257,7 +257,46 @@ async function uploadToVercelBlob(file, signed) {
   };
 }
 
+async function uploadToVercelBlobPresigned(file, signed) {
+  if (!signed?.uploadUrl) throw new Error(`Could not prepare ${file.name}.`);
+
+  const response = await fetch(signed.uploadUrl, {
+    method: "PUT",
+    headers: {
+      "Content-Type": file.type || "application/octet-stream",
+    },
+    body: file,
+  });
+
+  const text = await response.text();
+  let data = {};
+  try {
+    data = text ? JSON.parse(text) : {};
+  } catch {
+    data = {};
+  }
+
+  if (!response.ok) {
+    const message = data?.error?.message || data?.message || text.slice(0, 180).replace(/\s+/g, " ").trim();
+    throw new Error(message || `Could not upload ${file.name}.`);
+  }
+
+  return {
+    name: signed.name || file.name,
+    path: data.pathname || signed.path || signed.name || file.name,
+    provider: "vercel_blob",
+    size: file.size,
+    stored: true,
+    type: data.contentType || file.type || "application/octet-stream",
+    url: data.url || signed.url || "",
+  };
+}
+
 async function uploadToSignedUrl(file, signed) {
+  if (signed.provider === "vercel_blob_presigned") {
+    return uploadToVercelBlobPresigned(file, signed);
+  }
+
   if (signed.provider === "vercel_blob" || signed.clientToken) {
     return uploadToVercelBlob(file, signed);
   }

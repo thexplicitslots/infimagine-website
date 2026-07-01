@@ -43,6 +43,7 @@ module.exports = async function handler(request, response) {
     return sendJson(response, result.configured ? 201 : 202, {
       configured: result.configured,
       uploaded: result.configured,
+      provider: result.provider,
       files: result.files,
     });
   } catch (error) {
