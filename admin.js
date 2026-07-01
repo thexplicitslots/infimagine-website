@@ -195,7 +195,7 @@ function updateConnectionNote(mode, detail = "") {
   if (!connectionTitle || !connectionCopy) return;
 
   if (mode === "live") {
-    connectionTitle.textContent = "Supabase live";
+    connectionTitle.textContent = detail === "neon" ? "Neon live" : detail === "supabase" ? "Supabase live" : "Database live";
     connectionCopy.textContent = "Incoming website requests are loading from the connected database.";
     return;
   }
@@ -230,7 +230,7 @@ async function loadRemoteLeads() {
     }
 
     remoteConfigured = true;
-    updateConnectionNote("live");
+    updateConnectionNote("live", result.provider);
     leads = result.requests.length ? result.requests : leads;
     selectedId = leads[0]?.id || null;
     render();

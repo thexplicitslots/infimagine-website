@@ -37,7 +37,7 @@ module.exports = async function handler(request, response) {
 
     const payload = await readPayload(request);
     const result = payload.mode === "sign"
-      ? await createSignedUploadFiles(payload.files || [])
+      ? await createSignedUploadFiles(payload.files || [], request)
       : await uploadFiles(payload.files || []);
 
     return sendJson(response, result.configured ? 201 : 202, {

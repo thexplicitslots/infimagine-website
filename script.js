@@ -208,6 +208,86 @@ function fileToPayload(file) {
   });
 }
 
+function blobStoreId(clientToken) {
+  return String(clientToken || "").split("_")[3] || "";
+}
+
+async function uploadToVercelBlob(file, signed) {
+  const storeId = blobStoreId(signed.clientToken);
+  if (!storeId) throw new Error(`Could not prepare ${file.name}.`);
+
+  const pathname = signed.path || signed.name || file.name;
+  const response = await fetch(`https://vercel.com/api/blob/?pathname=${encodeURIComponent(pathname)}`, {
+    method: "PUT",
+    headers: {
+      Authorization: `Bearer ${signed.clientToken}`,
+      "Content-Type": file.type || "application/octet-stream",
+      "x-api-blob-request-attempt": "0",
+      "x-api-blob-request-id": `${storeId}:${Date.now()}:${Math.random().toString(16).slice(2)}`,
+      "x-api-version": "12",
+      "x-content-length": String(file.size),
+      "x-content-type": file.type || "application/octet-stream",
+      "x-vercel-blob-access": signed.access || "public",
+      "x-vercel-blob-store-id": storeId,
+    },
+    body: file,
+  });
+
+  const text = await response.text();
+  let data = {};
+  try {
+    data = text ? JSON.parse(text) : {};
+  } catch {
+    data = {};
+  }
+
+  if (!response.ok) {
+    const message = data?.error?.message || data?.message || text.slice(0, 180).replace(/\s+/g, " ").trim();
+    throw new Error(message || `Could not upload ${file.name}.`);
+  }
+
+  return {
+    name: signed.name || file.name,
+    path: data.pathname || pathname,
+    provider: "vercel_blob",
+    size: file.size,
+    stored: true,
+    type: data.contentType || file.type || "application/octet-stream",
+    url: data.url,
+  };
+}
+
+async function uploadToSignedUrl(file, signed) {
+  if (signed.provider === "vercel_blob" || signed.clientToken) {
+    return uploadToVercelBlob(file, signed);
+  }
+
+  if (!signed?.uploadUrl) throw new Error(`Could not prepare ${file.name}.`);
+
+  const response = await fetch(signed.uploadUrl, {
+    method: "PUT",
+    headers: {
+      "Content-Type": file.type || "application/octet-stream",
+      "cache-control": "3600",
+    },
+    body: file,
+  });
+
+  if (!response.ok) {
+    let uploadError = "";
+    try {
+      const data = await response.json();
+      uploadError = data?.message || data?.error || "";
+    } catch {
+      uploadError = await response.text();
+    }
+    throw new Error(uploadError || `Could not upload ${file.name}.`);
+  }
+
+  const { uploadUrl, token, ...storedFile } = signed;
+  return storedFile;
+}
+
 async function uploadAttachments() {
   const files = selectedFiles();
   if (!files.length) return [];
@@ -256,37 +336,16 @@ async function uploadAttachments() {
     for (let index = 0; index < files.length; index += 1) {
       const file = files[index];
       const signed = signedFiles[index];
-      if (!signed?.uploadUrl) throw new Error(`Could not prepare ${file.name}.`);
 
       submitStatus.textContent = `Uploading ${file.name}...`;
-      const uploadResponse = await fetch(signed.uploadUrl, {
-        method: "PUT",
-        headers: {
-          "Content-Type": file.type || "application/octet-stream",
-          "cache-control": "3600",
-        },
-        body: file,
-      });
-
-      if (!uploadResponse.ok) {
-        let uploadError = "";
-        try {
-          const data = await uploadResponse.json();
-          uploadError = data?.message || data?.error || "";
-        } catch {
-          uploadError = await uploadResponse.text();
-        }
-        throw new Error(uploadError || `Could not upload ${file.name}.`);
-      }
-
-      const { uploadUrl, token, ...storedFile } = signed;
-      uploaded.push(storedFile);
+      uploaded.push(await uploadToSignedUrl(file, signed));
     }
 
     currentAttachments = uploaded.length ? uploaded : fallback;
     updateEstimate();
     return currentAttachments;
-  } catch {
+  } catch (error) {
+    submitStatus.textContent = error.message || "Could not upload files. Opening WhatsApp with file names only.";
     currentAttachments = fallback;
     updateEstimate();
     return fallback;

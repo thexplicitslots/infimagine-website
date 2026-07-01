@@ -112,7 +112,7 @@ module.exports = async function handler(request, response) {
       slicer_error: "",
       sliced_at: new Date().toISOString(),
     });
-    const signedUrl = await createSignedStorageUrl(attachment.path);
+    const signedUrl = await createSignedStorageUrl(attachment.path, attachment.url);
     const worker = await callSlicerWorker({
       ...workerPayload(quote, attachment, signedUrl),
       async: true,

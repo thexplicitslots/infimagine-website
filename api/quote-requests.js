@@ -46,6 +46,7 @@ module.exports = async function handler(request, response) {
 
       return sendJson(response, 201, {
         configured: true,
+        provider: result.provider,
         saved: true,
         request: result.record,
       });
@@ -59,7 +60,8 @@ module.exports = async function handler(request, response) {
       const result = await listQuoteRequests();
       return sendJson(response, 200, {
         configured: result.configured,
-        message: result.configured ? "Quote requests loaded." : "Supabase environment variables are not configured.",
+        message: result.configured ? "Quote requests loaded." : "Database environment variables are not configured.",
+        provider: result.provider,
         requests: result.records,
       });
     }
@@ -69,6 +71,7 @@ module.exports = async function handler(request, response) {
       const result = await updateQuoteRequest(payload.id, payload.updates || {});
       return sendJson(response, 200, {
         configured: result.configured,
+        provider: result.provider,
         request: result.record,
       });
     }
