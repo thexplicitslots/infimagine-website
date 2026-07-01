@@ -362,13 +362,17 @@
             <div class="quote-stage">
             <div class="form-group is-active" data-step="1">
               <p>Contact</p>
-              <label>
+              <label class="full-field">
                 <span>Your name</span>
                 <input name="customerName" type="text" autocomplete="name" placeholder="Name" />
               </label>
               <label>
-                <span>Phone or email</span>
-                <input name="contactDetail" type="text" autocomplete="email" placeholder="How should we reply?" />
+                <span>Phone number</span>
+                <input name="customerPhone" type="tel" autocomplete="tel" placeholder="+91..." />
+              </label>
+              <label>
+                <span>Email address</span>
+                <input name="customerEmail" type="email" autocomplete="email" placeholder="you@example.com" />
               </label>
             </div>
 
@@ -495,16 +499,6 @@
                   <option value="3-5 days">3-5 days</option>
                   <option value="1 week">Within 1 week</option>
                   <option value="urgent">Urgent</option>
-                </select>
-              </label>
-              <label>
-                <span>Budget range</span>
-                <select name="budget">
-                  <option value="not sure">Not sure yet</option>
-                  <option value="under 1000">Under ₹1,000</option>
-                  <option value="1000-3000">₹1,000 - ₹3,000</option>
-                  <option value="3000-7000">₹3,000 - ₹7,000</option>
-                  <option value="7000+">₹7,000+</option>
                 </select>
               </label>
               <label>

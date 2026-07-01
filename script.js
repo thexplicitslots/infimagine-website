@@ -130,6 +130,17 @@ function fieldValue(data, name) {
   return data.get(name)?.trim() || "Not specified";
 }
 
+function contactSummary(data) {
+  const phone = data.get("customerPhone")?.trim();
+  const email = data.get("customerEmail")?.trim();
+  const parts = [
+    phone ? `Phone: ${phone}` : "",
+    email ? `Email: ${email}` : "",
+  ].filter(Boolean);
+
+  return parts.join(" | ") || "Not specified";
+}
+
 function selectedLabel(name, data = new FormData(form)) {
   const value = data.get(name);
   const option = form.querySelector(`[name="${name}"] option[value="${CSS.escape(value)}"]`);
@@ -419,7 +430,8 @@ function updateEstimate() {
     "",
     "Contact",
     `Name: ${fieldValue(data, "customerName")}`,
-    `Phone/email: ${fieldValue(data, "contactDetail")}`,
+    `Phone: ${fieldValue(data, "customerPhone")}`,
+    `Email: ${fieldValue(data, "customerEmail")}`,
     "",
     "Project details",
     `Type: ${selectedLabel("projectType", data)}`,
@@ -438,7 +450,6 @@ function updateEstimate() {
     "",
     "Timeline and delivery",
     `Timeline: ${selectedLabel("timeline", data)}`,
-    `Budget: ${selectedLabel("budget", data)}`,
     `Delivery: ${selectedLabel("delivery", data)}`,
     `Location: ${fieldValue(data, "location")}`,
     "",
@@ -461,7 +472,9 @@ function collectQuotePayload(attachments = currentAttachments) {
     source: "Website quote form",
     customer: {
       name: fieldValue(data, "customerName"),
-      contact: fieldValue(data, "contactDetail"),
+      phone: fieldValue(data, "customerPhone"),
+      email: fieldValue(data, "customerEmail"),
+      contact: contactSummary(data),
     },
     project: {
       type: selectedLabel("projectType", data),
@@ -482,7 +495,6 @@ function collectQuotePayload(attachments = currentAttachments) {
     },
     delivery: {
       timeline: selectedLabel("timeline", data),
-      budget: selectedLabel("budget", data),
       preference: selectedLabel("delivery", data),
       location: fieldValue(data, "location"),
     },
@@ -533,7 +545,6 @@ function collectAiPayload() {
     finish: selectedLabel("finish", data),
     strength: selectedLabel("strength", data),
     timeline: selectedLabel("timeline", data),
-    budget: selectedLabel("budget", data),
     delivery: selectedLabel("delivery", data),
     location: fieldValue(data, "location"),
     description: fieldValue(data, "description"),
