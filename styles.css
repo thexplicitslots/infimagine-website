@@ -1470,7 +1470,7 @@ h3 {
 
 .quote-stage {
   position: relative;
-  min-height: 330px;
+  min-height: 0;
 }
 
 .form-group {
@@ -1478,7 +1478,8 @@ h3 {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 14px;
-  padding: 16px;
+  align-content: start;
+  padding: clamp(16px, 1.8vw, 22px);
   border: 1px solid rgba(110, 231, 255, 0.1);
   border-radius: var(--radius);
   background: rgba(255, 255, 255, 0.025);
@@ -1693,13 +1694,15 @@ textarea:focus {
 }
 
 .estimate-result strong {
-  font-size: clamp(1.4rem, 3vw, 2.3rem);
+  flex: 0 0 auto;
+  font-size: clamp(1.35rem, 2.25vw, 2rem);
   line-height: 1;
   color: var(--white);
   text-align: right;
+  white-space: nowrap;
 }
 
-.quote-form .button {
+.quote-form > .button {
   grid-column: 1 / -1;
 }
 
