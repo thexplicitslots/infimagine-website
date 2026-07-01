@@ -59,6 +59,7 @@ module.exports = async function handler(request, response) {
       const result = await listQuoteRequests();
       return sendJson(response, 200, {
         configured: result.configured,
+        message: result.configured ? "Quote requests loaded." : "Supabase environment variables are not configured.",
         requests: result.records,
       });
     }

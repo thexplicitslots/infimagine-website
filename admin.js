@@ -191,7 +191,7 @@ function saveLeads() {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(leads));
 }
 
-function updateConnectionNote(mode) {
+function updateConnectionNote(mode, detail = "") {
   if (!connectionTitle || !connectionCopy) return;
 
   if (mode === "live") {
@@ -202,7 +202,9 @@ function updateConnectionNote(mode) {
 
   if (mode === "error") {
     connectionTitle.textContent = "Local fallback";
-    connectionCopy.textContent = "Could not load the database from this session, so local saved requests are shown.";
+    connectionCopy.textContent = detail
+      ? `Could not load the database: ${detail}`
+      : "Could not load the database from this session, so local saved requests are shown.";
     return;
   }
 
@@ -213,10 +215,17 @@ function updateConnectionNote(mode) {
 async function loadRemoteLeads() {
   try {
     const response = await fetch("/api/quote-requests");
-    const result = await response.json();
+    const text = await response.text();
+    let result = {};
+    try {
+      result = text ? JSON.parse(text) : {};
+    } catch {
+      result = {};
+    }
 
     if (!response.ok || !result.configured) {
-      updateConnectionNote("error");
+      remoteConfigured = false;
+      updateConnectionNote("error", result.error || result.message || text.slice(0, 180).replace(/\s+/g, " ").trim());
       return;
     }
 
@@ -225,9 +234,9 @@ async function loadRemoteLeads() {
     leads = result.requests.length ? result.requests : leads;
     selectedId = leads[0]?.id || null;
     render();
-  } catch {
+  } catch (error) {
     remoteConfigured = false;
-    updateConnectionNote("error");
+    updateConnectionNote("error", error.message || "Request failed.");
   }
 }
 
