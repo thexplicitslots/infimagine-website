@@ -130,9 +130,13 @@ function fieldValue(data, name) {
   return data.get(name)?.trim() || "Not specified";
 }
 
+function rawField(data, name) {
+  return data.get(name)?.trim() || "";
+}
+
 function contactSummary(data) {
-  const phone = data.get("customerPhone")?.trim();
-  const email = data.get("customerEmail")?.trim();
+  const phone = rawField(data, "customerPhone");
+  const email = rawField(data, "customerEmail");
   const parts = [
     phone ? `Phone: ${phone}` : "",
     email ? `Email: ${email}` : "",
@@ -472,8 +476,8 @@ function collectQuotePayload(attachments = currentAttachments) {
     source: "Website quote form",
     customer: {
       name: fieldValue(data, "customerName"),
-      phone: fieldValue(data, "customerPhone"),
-      email: fieldValue(data, "customerEmail"),
+      phone: rawField(data, "customerPhone"),
+      email: rawField(data, "customerEmail"),
       contact: contactSummary(data),
     },
     project: {
@@ -581,9 +585,22 @@ async function refineWithAi() {
 
 async function saveQuoteAndOpenWhatsapp(event) {
   event.preventDefault();
+
+  if (!form.checkValidity()) {
+    const invalidField = form.querySelector(":invalid");
+    const invalidStep = invalidField?.closest("[data-step]");
+    if (invalidStep?.dataset.step) {
+      updateQuoteStep(Number(invalidStep.dataset.step));
+    }
+    window.requestAnimationFrame(() => form.reportValidity());
+    submitStatus.textContent = "Please enter a valid email address so we can send your confirmation.";
+    return;
+  }
+
   updateEstimate();
   submitStatus.textContent = "Preparing your request...";
   whatsapp.setAttribute("aria-disabled", "true");
+  let openWhatsapp = true;
 
   try {
     const attachments = await uploadAttachments();
@@ -595,14 +612,25 @@ async function saveQuoteAndOpenWhatsapp(event) {
     });
     const result = await response.json();
 
-    submitStatus.textContent = result.saved
-      ? "Request saved. Opening WhatsApp..."
-      : "Opening WhatsApp. Your request will still be sent in the message.";
+    if (!response.ok) {
+      submitStatus.textContent = result.error || "Could not save the request. Please check the form details.";
+      openWhatsapp = response.status !== 400;
+      if (!openWhatsapp) return;
+      throw new Error(result.error || "Quote request failed.");
+    }
+
+    submitStatus.textContent = result.confirmationEmail?.sent
+      ? "Request saved. Confirmation sent. Opening WhatsApp..."
+      : result.saved
+        ? "Request saved. Opening WhatsApp..."
+        : "Opening WhatsApp. Your request will still be sent in the message.";
   } catch {
     submitStatus.textContent = "Opening WhatsApp. Your request will still be sent in the message.";
   } finally {
     whatsapp.removeAttribute("aria-disabled");
-    window.location.href = whatsapp.href;
+    if (openWhatsapp) {
+      window.location.href = whatsapp.href;
+    }
   }
 }
 

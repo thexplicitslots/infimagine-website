@@ -1,4 +1,5 @@
 const { hasValidSession } = require("../lib/admin-auth");
+const { isValidEmail, sendQuoteConfirmation } = require("../lib/email-confirmation");
 const { createQuoteRequest, listQuoteRequests, updateQuoteRequest } = require("../lib/quote-store");
 
 function sendJson(response, statusCode, payload) {
@@ -30,10 +31,22 @@ async function readPayload(request) {
   });
 }
 
+function customerEmail(payload) {
+  return String(payload?.customer?.email || "").trim().toLowerCase();
+}
+
 module.exports = async function handler(request, response) {
   try {
     if (request.method === "POST") {
       const payload = await readPayload(request);
+      const email = customerEmail(payload);
+
+      if (!isValidEmail(email)) {
+        return sendJson(response, 400, {
+          error: "A valid email address is required.",
+        });
+      }
+
       const result = await createQuoteRequest(payload);
 
       if (!result.configured) {
@@ -44,7 +57,20 @@ module.exports = async function handler(request, response) {
         });
       }
 
+      let confirmationEmail = { configured: false, sent: false };
+      try {
+        confirmationEmail = await sendQuoteConfirmation(payload, result.record);
+      } catch (error) {
+        console.error("Quote confirmation email failed:", error);
+        confirmationEmail = {
+          configured: true,
+          error: "Confirmation email could not be sent.",
+          sent: false,
+        };
+      }
+
       return sendJson(response, 201, {
+        confirmationEmail,
         configured: true,
         provider: result.provider,
         saved: true,

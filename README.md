@@ -26,6 +26,25 @@ NEON_TABLE=quote_requests
 
 The API automatically creates the `quote_requests` Neon table and indexes on first use.
 
+## Email confirmations
+
+The quote form requires a customer email address. After `/api/quote-requests` saves the lead, it attempts to send an automatic confirmation email through SMTP. If SMTP is not configured, the lead still saves normally.
+
+For Zoho Mail, add these Vercel environment variables after `admin@infimagine.com` is active:
+
+```bash
+SMTP_HOST=smtp.zoho.com
+SMTP_PORT=465
+SMTP_SECURE=true
+SMTP_USER=admin@infimagine.com
+SMTP_PASS=...
+EMAIL_FROM="InfiMagine <admin@infimagine.com>"
+EMAIL_REPLY_TO=admin@infimagine.com
+EMAIL_HELO_DOMAIN=infimagine.com
+```
+
+Use the Zoho mailbox password or an app-specific password if two-factor authentication is enabled. Redeploy after adding the variables.
+
 ## File uploads
 
 Quote attachments upload to Vercel Blob through browser-side client uploads, so large STL files do not pass through a Vercel Function body.
