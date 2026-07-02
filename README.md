@@ -28,22 +28,17 @@ The API automatically creates the `quote_requests` Neon table and indexes on fir
 
 ## Email confirmations
 
-The quote form requires a customer email address. After `/api/quote-requests` saves the lead, it attempts to send an automatic confirmation email through SMTP. If SMTP is not configured, the lead still saves normally.
+The quote form requires a customer email address. After `/api/quote-requests` saves the lead, it attempts to send an automatic confirmation email through Resend. If Resend is not configured, the lead still saves normally.
 
-For Zoho Mail, add these Vercel environment variables after `admin@infimagine.com` is active:
+Verify `infimagine.com` in Resend, then add these Vercel environment variables:
 
 ```bash
-SMTP_HOST=smtp.zoho.com
-SMTP_PORT=465
-SMTP_SECURE=true
-SMTP_USER=admin@infimagine.com
-SMTP_PASS=...
+RESEND_API_KEY=...
 EMAIL_FROM="InfiMagine <admin@infimagine.com>"
 EMAIL_REPLY_TO=admin@infimagine.com
-EMAIL_HELO_DOMAIN=infimagine.com
 ```
 
-Use the Zoho mailbox password or an app-specific password if two-factor authentication is enabled. Redeploy after adding the variables.
+Keep Zoho Mail for receiving inbox mail. Resend is only used for transactional website confirmations. Redeploy after adding or changing the variables.
 
 ## File uploads
 
