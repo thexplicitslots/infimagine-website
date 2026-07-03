@@ -18,7 +18,7 @@ const fileSummary = document.querySelector("[data-file-summary]");
 const year = document.querySelector("[data-year]");
 const totalQuoteSteps = quoteGroups.length;
 let currentQuoteStep = 1;
-let currentEstimateRange = "₹799 - ₹1,499";
+let currentEstimateRange = "₹2,399 - ₹5,199";
 let currentAttachments = [];
 const maxUploadFiles = 4;
 const maxUploadBytes = 100 * 1024 * 1024;
@@ -43,10 +43,10 @@ const revealTargets = [...new Set([
 ].flatMap((selector) => [...document.querySelectorAll(selector)]))];
 
 const priceRanges = {
-  gift: { small: [799, 1499], medium: [1499, 2999], large: [2999, 5999] },
-  prototype: { small: [999, 2499], medium: [2499, 5499], large: [5499, 11999] },
-  model: { small: [1199, 2499], medium: [2499, 6999], large: [6999, 14999] },
-  utility: { small: [499, 1299], medium: [1299, 3499], large: [3499, 7999] },
+  gift: { small: [1499, 2999], medium: [2999, 6499], large: [6499, 14999] },
+  prototype: { small: [3499, 7999], medium: [7999, 17999], large: [17999, 39999] },
+  model: { small: [4999, 9999], medium: [9999, 24999], large: [24999, 69999] },
+  utility: { small: [1499, 3499], medium: [3499, 8999], large: [8999, 19999] },
 };
 
 const readinessAdders = {
