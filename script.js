@@ -26,13 +26,16 @@ const maxUploadTotalBytes = 160 * 1024 * 1024;
 
 const revealTargets = [...new Set([
   ".statement-grid",
+  ".proof-strip > div",
   ".section-heading",
   ".service-card",
+  ".project-card",
   ".showcase-item",
   ".preview-copy",
   ".product-preview",
   ".steps li",
   ".trust-card",
+  ".assurance-grid article",
   ".faq-panel",
   ".estimate-copy",
   ".quote-form",
@@ -598,13 +601,13 @@ async function saveQuoteAndOpenWhatsapp(event) {
   }
 
   updateEstimate();
-  submitStatus.textContent = "Preparing your request...";
+  submitStatus.textContent = "Preparing your project request...";
   whatsapp.setAttribute("aria-disabled", "true");
   let openWhatsapp = true;
 
   try {
     const attachments = await uploadAttachments();
-    submitStatus.textContent = "Saving your request before opening WhatsApp...";
+    submitStatus.textContent = "Saving your request and preparing confirmation...";
     const response = await fetch("/api/quote-requests", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -620,9 +623,9 @@ async function saveQuoteAndOpenWhatsapp(event) {
     }
 
     submitStatus.textContent = result.confirmationEmail?.sent
-      ? "Request saved. Confirmation sent. Opening WhatsApp..."
+      ? "Request saved. Confirmation sent. Opening WhatsApp for faster follow-up..."
       : result.saved
-        ? "Request saved. Opening WhatsApp..."
+        ? "Request saved. Opening WhatsApp for faster follow-up..."
         : "Opening WhatsApp. Your request will still be sent in the message.";
   } catch {
     submitStatus.textContent = "Opening WhatsApp. Your request will still be sent in the message.";
