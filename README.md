@@ -28,7 +28,7 @@ The API automatically creates the `quote_requests` Neon table and indexes on fir
 
 ## Email confirmations
 
-The quote form requires a customer email address. After `/api/quote-requests` saves the lead, it attempts to send an automatic confirmation email through Resend. If Resend is not configured, the lead still saves normally.
+The quote form requires a customer email address. After `/api/quote-requests` saves the lead, it attempts to send an automatic customer confirmation and an internal quote notification through Resend. If Resend is not configured, the lead still saves normally.
 
 Verify `infimagine.com` in Resend, then add these Vercel environment variables:
 
@@ -36,9 +36,10 @@ Verify `infimagine.com` in Resend, then add these Vercel environment variables:
 RESEND_API_KEY=...
 EMAIL_FROM="InfiMagine <admin@infimagine.com>"
 EMAIL_REPLY_TO=admin@infimagine.com
+QUOTE_NOTIFICATION_TO=admin@infimagine.com,Chinmayarya05@gmail.com,Ananyamittal6616@gmail.com
 ```
 
-Keep Zoho Mail for receiving inbox mail. Resend is only used for transactional website confirmations. Redeploy after adding or changing the variables.
+Keep Zoho Mail for receiving inbox mail. Resend is only used for transactional website confirmations and owner quote notifications. Redeploy after adding or changing the variables.
 
 ## File uploads
 

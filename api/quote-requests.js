@@ -1,5 +1,5 @@
 const { hasValidSession } = require("../lib/admin-auth");
-const { isValidEmail, sendQuoteConfirmation } = require("../lib/email-confirmation");
+const { isValidEmail, sendQuoteConfirmation, sendQuoteNotification } = require("../lib/email-confirmation");
 const { createQuoteRequest, listQuoteRequests, updateQuoteRequest } = require("../lib/quote-store");
 
 function sendJson(response, statusCode, payload) {
@@ -58,6 +58,7 @@ module.exports = async function handler(request, response) {
       }
 
       let confirmationEmail = { configured: false, sent: false };
+      let notificationEmail = { configured: false, sent: false };
       try {
         confirmationEmail = await sendQuoteConfirmation(payload, result.record);
       } catch (error) {
@@ -68,10 +69,21 @@ module.exports = async function handler(request, response) {
           sent: false,
         };
       }
+      try {
+        notificationEmail = await sendQuoteNotification(payload, result.record);
+      } catch (error) {
+        console.error("Quote notification email failed:", error);
+        notificationEmail = {
+          configured: true,
+          error: "Quote notification email could not be sent.",
+          sent: false,
+        };
+      }
 
       return sendJson(response, 201, {
         confirmationEmail,
         configured: true,
+        notificationEmail,
         provider: result.provider,
         saved: true,
         request: result.record,
