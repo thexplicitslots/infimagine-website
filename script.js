@@ -40,6 +40,12 @@ const revealTargets = [...new Set([
   ".estimate-copy",
   ".quote-form",
   ".contact-grid",
+  ".seo-hero-copy",
+  ".seo-hero-panel",
+  ".seo-card",
+  ".seo-band-card",
+  ".seo-feature",
+  ".seo-cta",
 ].flatMap((selector) => [...document.querySelectorAll(selector)]))];
 
 const priceRanges = {
@@ -94,10 +100,12 @@ function formatCurrency(value) {
 }
 
 function updateHeader() {
+  if (!header) return;
   header.classList.toggle("is-scrolled", window.scrollY > 16);
 }
 
 function setMobileMenu(open) {
+  if (!header || !mobileMenu || !menuToggle) return;
   mobileMenu.hidden = !open;
   header.classList.toggle("is-menu-open", open);
   menuToggle.setAttribute("aria-expanded", String(open));
@@ -148,7 +156,8 @@ function contactSummary(data) {
   return parts.join(" | ") || "Not specified";
 }
 
-function selectedLabel(name, data = new FormData(form)) {
+function selectedLabel(name, data = form ? new FormData(form) : new FormData()) {
+  if (!form) return "Not specified";
   const value = data.get(name);
   const option = form.querySelector(`[name="${name}"] option[value="${CSS.escape(value)}"]`);
   return option?.textContent.trim() || value || "Not specified";
@@ -397,6 +406,7 @@ async function uploadAttachments() {
 }
 
 function updateEstimate() {
+  if (!form || !estimate || !quoteStepLabel) return;
   const data = new FormData(form);
   const projectType = data.get("projectType");
   const size = data.get("size");
@@ -421,6 +431,7 @@ function updateEstimate() {
 }
 
 function collectQuotePayload(attachments = currentAttachments) {
+  if (!form) return {};
   const data = new FormData(form);
   return {
     createdAt: new Date().toISOString(),
@@ -458,6 +469,7 @@ function collectQuotePayload(attachments = currentAttachments) {
 }
 
 function updateQuoteStep(step) {
+  if (!form || !totalQuoteSteps) return;
   currentQuoteStep = Math.min(Math.max(step, 1), totalQuoteSteps);
   form.dataset.currentStep = String(currentQuoteStep);
 
@@ -488,6 +500,7 @@ function updateQuoteStep(step) {
 }
 
 function collectAiPayload() {
+  if (!form) return {};
   const data = new FormData(form);
   return {
     projectType: selectedLabel("projectType", data),
@@ -508,6 +521,7 @@ function collectAiPayload() {
 }
 
 async function refineWithAi() {
+  if (!form || !aiHelperButton || !aiOutput || !aiStatus) return;
   aiStatus.textContent = "Exploring design possibilities for your idea...";
   aiHelperButton.disabled = true;
   form.classList.add("is-thinking");
@@ -536,6 +550,7 @@ async function refineWithAi() {
 }
 
 async function saveQuoteRequest(event) {
+  if (!form || !quoteSubmitButton || !submitStatus) return;
   event.preventDefault();
 
   if (!form.checkValidity()) {
@@ -584,10 +599,10 @@ async function saveQuoteRequest(event) {
 }
 
 window.addEventListener("scroll", updateHeader, { passive: true });
-menuToggle.addEventListener("click", () => {
+menuToggle?.addEventListener("click", () => {
   setMobileMenu(!header.classList.contains("is-menu-open"));
 });
-mobileMenu.addEventListener("click", (event) => {
+mobileMenu?.addEventListener("click", (event) => {
   if (event.target.closest("a")) {
     setMobileMenu(false);
   }
@@ -597,18 +612,20 @@ window.addEventListener("keydown", (event) => {
     setMobileMenu(false);
   }
 });
-form.addEventListener("input", updateEstimate);
-form.addEventListener("change", updateEstimate);
+form?.addEventListener("input", updateEstimate);
+form?.addEventListener("change", updateEstimate);
 fileInput?.addEventListener("change", updateFileSummary);
-prevStepButton.addEventListener("click", () => updateQuoteStep(currentQuoteStep - 1));
-nextStepButton.addEventListener("click", () => updateQuoteStep(currentQuoteStep + 1));
+prevStepButton?.addEventListener("click", () => updateQuoteStep(currentQuoteStep - 1));
+nextStepButton?.addEventListener("click", () => updateQuoteStep(currentQuoteStep + 1));
 quoteSteps.forEach((button) => {
   button.addEventListener("click", () => updateQuoteStep(Number(button.dataset.stepTarget)));
 });
-aiHelperButton.addEventListener("click", refineWithAi);
-quoteSubmitButton.addEventListener("click", saveQuoteRequest);
+aiHelperButton?.addEventListener("click", refineWithAi);
+quoteSubmitButton?.addEventListener("click", saveQuoteRequest);
 
-year.textContent = new Date().getFullYear();
+if (year) {
+  year.textContent = new Date().getFullYear();
+}
 updateHeader();
 initReveals();
 updateQuoteStep(1);
