@@ -2008,7 +2008,7 @@ textarea:focus {
   gap: 12px;
 }
 
-.quote-form [data-whatsapp] {
+.quote-form [data-submit-quote] {
   display: none;
   opacity: 0;
   transform: translateY(10px);
@@ -2023,7 +2023,7 @@ textarea:focus {
   font-weight: 750;
 }
 
-.quote-form[data-current-step="5"] [data-whatsapp] {
+.quote-form[data-current-step="5"] [data-submit-quote] {
   display: inline-flex;
   animation: revealAction 260ms ease forwards;
 }

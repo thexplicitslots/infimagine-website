@@ -16,7 +16,7 @@ Then open `http://localhost:3000`.
 
 ## Server-side quote capture
 
-The quote flow posts structured requests to `/api/quote-requests` before opening WhatsApp. The primary backend is Neon Postgres, with Supabase kept only as a legacy fallback.
+The quote flow posts structured requests to `/api/quote-requests`, then keeps the customer on the page while confirmation and owner notification emails are sent. The primary backend is Neon Postgres, with Supabase kept only as a legacy fallback.
 
 ```bash
 DATABASE_URL=...

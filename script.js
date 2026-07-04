@@ -3,7 +3,7 @@ const menuToggle = document.querySelector("[data-menu-toggle]");
 const mobileMenu = document.querySelector("[data-mobile-menu]");
 const form = document.querySelector("#quote-form");
 const estimate = document.querySelector("[data-estimate]");
-const whatsapp = document.querySelector("[data-whatsapp]");
+const quoteSubmitButton = document.querySelector("[data-submit-quote]");
 const submitStatus = document.querySelector("[data-submit-status]");
 const quoteStepLabel = document.querySelector("[data-step-label]");
 const quoteGroups = [...document.querySelectorAll("[data-step]")];
@@ -170,19 +170,6 @@ function selectedFiles() {
   return fileInput ? [...fileInput.files].slice(0, maxUploadFiles) : [];
 }
 
-function attachmentLines(attachments = currentAttachments) {
-  if (!attachments.length) return ["Files: Not uploaded"];
-  return [
-    "Files",
-    ...attachments.map((file) => {
-      const size = file.size ? ` (${formatBytes(file.size)})` : "";
-      const link = file.url ? ` - ${file.url}` : "";
-      const status = file.stored === false ? " - selected for WhatsApp follow-up" : "";
-      return `${file.name}${size}${link}${status}`;
-    }),
-  ];
-}
-
 function updateFileSummary() {
   if (!fileInput || !fileSummary) return;
   const files = selectedFiles();
@@ -198,7 +185,7 @@ function updateFileSummary() {
   const names = files.map((file) => `${file.name} (${formatBytes(file.size)})`).join(", ");
   const clipped = fileInput.files.length > maxUploadFiles ? ` Only the first ${maxUploadFiles} files will be attached.` : "";
   const sizeWarning = totalBytes > maxUploadTotalBytes
-    ? " Very large files will be listed in the request and can be sent directly on WhatsApp."
+    ? " Very large files will be listed in the request; we will ask for a transfer link if needed."
     : "";
   fileSummary.textContent = `${names}.${clipped}${sizeWarning}`;
   currentAttachments = files.map((file) => ({
@@ -402,7 +389,7 @@ async function uploadAttachments() {
     updateEstimate();
     return currentAttachments;
   } catch (error) {
-    submitStatus.textContent = error.message || "Could not upload files. Opening WhatsApp with file names only.";
+    submitStatus.textContent = error.message || "Could not upload files. The file names will still be saved with your request.";
     currentAttachments = fallback;
     updateEstimate();
     return fallback;
@@ -431,44 +418,6 @@ function updateEstimate() {
   currentEstimateRange = `${formatCurrency(low)} - ${formatCurrency(high)}`;
   estimate.textContent = currentEstimateRange;
   quoteStepLabel.textContent = `Step ${currentQuoteStep} of ${totalQuoteSteps} · Starting estimate`;
-
-  const brief = [
-    "Hi InfiMagine, I want a quote for a custom 3D print.",
-    "",
-    "Contact",
-    `Name: ${fieldValue(data, "customerName")}`,
-    `Phone: ${fieldValue(data, "customerPhone")}`,
-    `Email: ${fieldValue(data, "customerEmail")}`,
-    "",
-    "Project details",
-    `Type: ${selectedLabel("projectType", data)}`,
-    `Quantity: ${selectedLabel("quantity", data)}`,
-    `Approx size: ${selectedLabel("size", data)}`,
-    `Dimensions: ${fieldValue(data, "dimensions")}`,
-    `Design readiness: ${selectedLabel("readiness", data)}`,
-    `Reference/file link: ${fieldValue(data, "referenceLink")}`,
-    ...attachmentLines(),
-    "",
-    "Material and finish",
-    `Material: ${selectedLabel("material", data)}`,
-    `Color: ${fieldValue(data, "color")}`,
-    `Finish: ${selectedLabel("finish", data)}`,
-    `Strength priority: ${selectedLabel("strength", data)}`,
-    "",
-    "Timeline and delivery",
-    `Timeline: ${selectedLabel("timeline", data)}`,
-    `Delivery: ${selectedLabel("delivery", data)}`,
-    `Location: ${fieldValue(data, "location")}`,
-    "",
-    "Idea description",
-    fieldValue(data, "description"),
-    "",
-    "AI design possibilities",
-    fieldValue(data, "aiBrief"),
-    "",
-    `Website estimate: ${currentEstimateRange}`,
-  ].join("\n");
-  whatsapp.href = `https://wa.me/?text=${encodeURIComponent(brief)}`;
 }
 
 function collectQuotePayload(attachments = currentAttachments) {
@@ -586,7 +535,7 @@ async function refineWithAi() {
   }
 }
 
-async function saveQuoteAndOpenWhatsapp(event) {
+async function saveQuoteRequest(event) {
   event.preventDefault();
 
   if (!form.checkValidity()) {
@@ -602,8 +551,8 @@ async function saveQuoteAndOpenWhatsapp(event) {
 
   updateEstimate();
   submitStatus.textContent = "Preparing your project request...";
-  whatsapp.setAttribute("aria-disabled", "true");
-  let openWhatsapp = true;
+  quoteSubmitButton.disabled = true;
+  quoteSubmitButton.setAttribute("aria-busy", "true");
 
   try {
     const attachments = await uploadAttachments();
@@ -617,23 +566,20 @@ async function saveQuoteAndOpenWhatsapp(event) {
 
     if (!response.ok) {
       submitStatus.textContent = result.error || "Could not save the request. Please check the form details.";
-      openWhatsapp = response.status !== 400;
-      if (!openWhatsapp) return;
       throw new Error(result.error || "Quote request failed.");
     }
 
     submitStatus.textContent = result.confirmationEmail?.sent
-      ? "Request saved. Confirmation sent. Opening WhatsApp for faster follow-up..."
+      ? "Request saved. Confirmation sent. We will review your project and reply soon."
       : result.saved
-        ? "Request saved. Opening WhatsApp for faster follow-up..."
-        : "Opening WhatsApp. Your request will still be sent in the message.";
-  } catch {
-    submitStatus.textContent = "Opening WhatsApp. Your request will still be sent in the message.";
+        ? "Request saved. We will review your project and reply soon."
+        : "Request prepared, but it could not be saved. Please email admin@infimagine.com.";
+    quoteSubmitButton.textContent = "Request submitted";
+  } catch (error) {
+    submitStatus.textContent = error.message || "Could not save the request. Please try again or email admin@infimagine.com.";
+    quoteSubmitButton.disabled = false;
   } finally {
-    whatsapp.removeAttribute("aria-disabled");
-    if (openWhatsapp) {
-      window.location.href = whatsapp.href;
-    }
+    quoteSubmitButton.removeAttribute("aria-busy");
   }
 }
 
@@ -660,7 +606,7 @@ quoteSteps.forEach((button) => {
   button.addEventListener("click", () => updateQuoteStep(Number(button.dataset.stepTarget)));
 });
 aiHelperButton.addEventListener("click", refineWithAi);
-whatsapp.addEventListener("click", saveQuoteAndOpenWhatsapp);
+quoteSubmitButton.addEventListener("click", saveQuoteRequest);
 
 year.textContent = new Date().getFullYear();
 updateHeader();
