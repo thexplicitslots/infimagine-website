@@ -346,6 +346,7 @@ img {
   isolation: isolate;
 }
 
+.hero-media,
 .hero-image,
 .hero-shade,
 .hero-grid,
@@ -354,6 +355,10 @@ img {
   inset: 0;
   width: 100%;
   height: 100%;
+}
+
+.hero-media {
+  display: block;
 }
 
 .hero-image {
@@ -2499,6 +2504,7 @@ textarea:focus {
 
   .scan-line {
     opacity: 0.26;
+    animation: none;
   }
 
   .ring-one {
@@ -2507,6 +2513,17 @@ textarea:focus {
     right: -72px;
     top: 24%;
     opacity: 0.54;
+    animation: none;
+  }
+
+  .ring-two,
+  .button.primary::after,
+  .preview-copy,
+  .preview-object,
+  .product-preview::before,
+  .quote-glow,
+  .quote-step.is-gliding {
+    animation: none;
   }
 
   .hero-content {

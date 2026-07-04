@@ -29,7 +29,15 @@
     <link rel="icon" type="image/png" sizes="32x32" href="/assets/favicon-32.png" />
     <link rel="apple-touch-icon" sizes="180x180" href="/assets/apple-touch-icon.png" />
     <link rel="manifest" href="/site.webmanifest" />
-    <link rel="preload" as="image" href="/assets/infimagine-hero.png" />
+    <link
+      rel="preload"
+      as="image"
+      href="/assets/infimagine-hero-1200.webp"
+      imagesrcset="/assets/infimagine-hero-768.webp 768w, /assets/infimagine-hero-1200.webp 1200w, /assets/infimagine-hero-1717.webp 1717w"
+      imagesizes="100vw"
+      type="image/webp"
+      fetchpriority="high"
+    />
     <link rel="stylesheet" href="/styles.css" />
     <script type="application/ld+json">
       {
@@ -57,7 +65,7 @@
     <header class="site-header" data-header>
       <a class="brand" href="#top" aria-label="InfiMagine home">
         <span class="brand-mark" aria-hidden="true">
-          <img src="/assets/infimagine-logo-cropped.png" alt="" />
+          <img src="/assets/infimagine-logo-header.webp" width="280" height="125" alt="" decoding="async" />
         </span>
         <span class="brand-lockup">
           <span>InfiMagine</span>
@@ -86,11 +94,22 @@
 
     <main id="top">
       <section class="hero" aria-labelledby="hero-title">
-        <img
-          class="hero-image"
-          src="/assets/infimagine-hero.png"
-          alt="A modern 3D printer turning a glowing design sketch into a physical printed object"
-        />
+        <picture class="hero-media">
+          <source
+            type="image/webp"
+            srcset="/assets/infimagine-hero-768.webp 768w, /assets/infimagine-hero-1200.webp 1200w, /assets/infimagine-hero-1717.webp 1717w"
+            sizes="100vw"
+          />
+          <img
+            class="hero-image"
+            src="/assets/infimagine-hero.png"
+            width="1717"
+            height="916"
+            fetchpriority="high"
+            decoding="async"
+            alt="A modern 3D printer turning a glowing design sketch into a physical printed object"
+          />
+        </picture>
         <div class="hero-shade" aria-hidden="true"></div>
         <div class="hero-grid" aria-hidden="true"></div>
         <div class="scan-line" aria-hidden="true"></div>
