@@ -27,6 +27,7 @@
           <a class="is-active" href="#dashboard">Dashboard</a>
           <a href="#requests">Requests</a>
           <a href="#pipeline">Pipeline</a>
+          <a href="#gallery">Gallery</a>
           <a href="#import">Import</a>
         </nav>
 
@@ -254,6 +255,43 @@
             </div>
           </div>
           <div class="pipeline-board" data-pipeline-board></div>
+        </section>
+
+        <section class="panel gallery-admin-panel" id="gallery">
+          <div class="panel-heading">
+            <div>
+              <p class="eyebrow">Website gallery</p>
+              <h2>Upload finished work</h2>
+            </div>
+          </div>
+          <div class="gallery-upload-grid">
+            <label>
+              <span>Photo title</span>
+              <input data-gallery-title placeholder="Example: Voron nylon bracket test" />
+            </label>
+            <label>
+              <span>Category</span>
+              <select data-gallery-category>
+                <option>Finished print</option>
+                <option>Prototype</option>
+                <option>Personalized gift</option>
+                <option>Model / miniature</option>
+                <option>Utility part</option>
+                <option>Material test</option>
+              </select>
+            </label>
+            <label class="full-field">
+              <span>Alt text / caption</span>
+              <input data-gallery-alt placeholder="Short visual description for SEO and accessibility" />
+            </label>
+            <label class="gallery-file-field full-field">
+              <span>Image file</span>
+              <input data-gallery-file type="file" accept="image/jpeg,image/png,image/webp,image/gif" />
+            </label>
+            <button class="button primary" type="button" data-gallery-upload>Upload to website gallery</button>
+            <p class="gallery-upload-status" data-gallery-status aria-live="polite"></p>
+          </div>
+          <div class="gallery-admin-list" data-gallery-admin-list></div>
         </section>
 
         <section class="panel import-panel" id="import">

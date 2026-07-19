@@ -66,6 +66,16 @@ const newFields = {
   description: document.querySelector("[data-new-description]"),
 };
 
+const galleryFields = {
+  title: document.querySelector("[data-gallery-title]"),
+  category: document.querySelector("[data-gallery-category]"),
+  alt: document.querySelector("[data-gallery-alt]"),
+  file: document.querySelector("[data-gallery-file]"),
+  upload: document.querySelector("[data-gallery-upload]"),
+  status: document.querySelector("[data-gallery-status]"),
+  list: document.querySelector("[data-gallery-admin-list]"),
+};
+
 const sampleLeads = [
   {
     id: "lead-1001",
@@ -161,6 +171,7 @@ let remoteConfigured = false;
 let notesSaveTimer;
 let activeViewer = null;
 let slicerEstimates = {};
+let galleryItems = [];
 
 const materialProfiles = [
   { match: "peek", label: "PEEK", rate: 25000 },
@@ -986,6 +997,184 @@ function render() {
   renderDetail();
 }
 
+function setGalleryStatus(message, tone = "") {
+  if (!galleryFields.status) return;
+  galleryFields.status.textContent = message || "";
+  galleryFields.status.dataset.tone = tone;
+}
+
+function renderGalleryAdmin() {
+  if (!galleryFields.list) return;
+
+  if (!galleryItems.length) {
+    galleryFields.list.innerHTML = `
+      <div class="gallery-admin-empty">
+        <strong>No website photos yet.</strong>
+        <p>Upload finished prints, prototypes, material tests, or detail shots to publish them on the homepage gallery.</p>
+      </div>
+    `;
+    return;
+  }
+
+  galleryFields.list.innerHTML = galleryItems
+    .map((item) => `
+      <article class="gallery-admin-card">
+        <img src="${escapeHtml(item.imageUrl)}" alt="${escapeHtml(item.altText || item.title)}" width="480" height="360" loading="lazy" decoding="async" />
+        <div>
+          <span>${escapeHtml(item.category || "Gallery")}</span>
+          <strong>${escapeHtml(item.title || "Studio project")}</strong>
+          <p>${escapeHtml(item.altText || "No caption saved.")}</p>
+          <small>${escapeHtml([item.contentType, item.size ? formatBytes(item.size) : ""].filter(Boolean).join(" · "))}</small>
+        </div>
+        <button type="button" data-gallery-delete="${escapeHtml(item.id)}">Remove</button>
+      </article>
+    `)
+    .join("");
+}
+
+async function loadGalleryAdmin() {
+  if (!galleryFields.list) return;
+
+  try {
+    const response = await fetch("/api/gallery-images");
+    const result = await response.json();
+    if (!response.ok) throw new Error(result.error || "Could not load gallery.");
+    galleryItems = Array.isArray(result.items) ? result.items : [];
+    renderGalleryAdmin();
+
+    if (!result.configured) {
+      setGalleryStatus("Connect Neon database before publishing gallery images.", "warn");
+    }
+  } catch (error) {
+    setGalleryStatus(error.message || "Could not load gallery.", "error");
+    renderGalleryAdmin();
+  }
+}
+
+async function signGalleryImage(file) {
+  const response = await fetch("/api/gallery-images", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      mode: "sign",
+      file: {
+        name: file.name,
+        size: file.size,
+        type: file.type || "application/octet-stream",
+      },
+    }),
+  });
+  const result = await response.json();
+  if (!response.ok || !result.configured) {
+    throw new Error(result.error || result.message || "Gallery upload is not configured.");
+  }
+  return result.file;
+}
+
+async function uploadGalleryImage(file, signed) {
+  const response = await fetch(signed.uploadUrl, {
+    method: "PUT",
+    headers: {
+      "Content-Type": file.type || signed.type || "application/octet-stream",
+    },
+    body: file,
+  });
+  const text = await response.text();
+  let result = {};
+  try {
+    result = text ? JSON.parse(text) : {};
+  } catch {
+    result = {};
+  }
+
+  if (!response.ok) {
+    const message = result?.error?.message || result?.message || text.slice(0, 160).replace(/\s+/g, " ").trim();
+    throw new Error(message || "Image upload failed.");
+  }
+
+  return {
+    contentType: result.contentType || file.type || signed.type,
+    imageUrl: result.url || signed.url || "",
+    pathname: result.pathname || signed.path || "",
+    size: file.size,
+  };
+}
+
+async function saveGalleryImage(item) {
+  const response = await fetch("/api/gallery-images", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ mode: "create", item }),
+  });
+  const result = await response.json();
+  if (!response.ok || !result.configured) {
+    throw new Error(result.error || "Could not publish gallery image.");
+  }
+  return result.item;
+}
+
+async function uploadGalleryPhoto() {
+  const file = galleryFields.file?.files?.[0];
+  const title = galleryFields.title?.value.trim() || "";
+  const category = galleryFields.category?.value || "Finished print";
+  const altText = galleryFields.alt?.value.trim() || title;
+
+  if (!file) {
+    setGalleryStatus("Choose an image first.", "warn");
+    return;
+  }
+
+  galleryFields.upload.disabled = true;
+  setGalleryStatus("Preparing gallery upload...");
+
+  try {
+    const signed = await signGalleryImage(file);
+    setGalleryStatus(`Uploading ${file.name}...`);
+    const uploaded = await uploadGalleryImage(file, signed);
+    setGalleryStatus("Publishing image to website gallery...");
+    const item = await saveGalleryImage({
+      ...uploaded,
+      title: title || file.name.replace(/\.[^.]+$/, "").replace(/[-_]+/g, " "),
+      category,
+      altText: altText || title || "Finished InfiMagine 3D printed project",
+    });
+
+    galleryItems = [item, ...galleryItems];
+    renderGalleryAdmin();
+    galleryFields.title.value = "";
+    galleryFields.alt.value = "";
+    galleryFields.file.value = "";
+    setGalleryStatus("Gallery image published on the website.", "success");
+  } catch (error) {
+    setGalleryStatus(error.message || "Gallery upload failed.", "error");
+  } finally {
+    galleryFields.upload.disabled = false;
+  }
+}
+
+async function deleteGalleryPhoto(id, button) {
+  button.disabled = true;
+  button.textContent = "Removing...";
+  setGalleryStatus("Removing gallery image...");
+
+  try {
+    const response = await fetch("/api/gallery-images", {
+      method: "DELETE",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ id }),
+    });
+    const result = await response.json();
+    if (!response.ok) throw new Error(result.error || "Could not remove gallery image.");
+    galleryItems = galleryItems.filter((item) => item.id !== id);
+    renderGalleryAdmin();
+    setGalleryStatus("Gallery image removed.", "success");
+  } catch (error) {
+    setGalleryStatus(error.message || "Could not remove gallery image.", "error");
+    button.disabled = false;
+    button.textContent = "Remove";
+  }
+}
+
 function updateSelected(updates) {
   leads = leads.map((lead) => (lead.id === selectedId ? { ...lead, ...updates } : lead));
   saveLeads();
@@ -1100,6 +1289,13 @@ statusFilter.addEventListener("change", renderLeads);
 exportButton.addEventListener("click", exportCsv);
 addLeadButton.addEventListener("click", () => document.querySelector("#import").scrollIntoView({ behavior: "smooth" }));
 createLeadButton.addEventListener("click", createLead);
+galleryFields.upload?.addEventListener("click", uploadGalleryPhoto);
+galleryFields.list?.addEventListener("click", (event) => {
+  const button = event.target.closest("[data-gallery-delete]");
+  if (!button) return;
+  if (!window.confirm("Remove this photo from the website gallery?")) return;
+  deleteGalleryPhoto(button.dataset.galleryDelete, button);
+});
 detailFields.attachments.addEventListener("click", handleAttachmentAction);
 viewerCloseButtons.forEach((button) => button.addEventListener("click", closeFileViewer));
 viewerReset.addEventListener("click", () => activeViewer?.reset?.());
@@ -1138,3 +1334,4 @@ window.addEventListener("keydown", (event) => {
 
 render();
 loadRemoteLeads();
+loadGalleryAdmin();

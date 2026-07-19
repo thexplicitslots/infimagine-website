@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "private": true,
   "scripts": {
-    "check": "node --check admin.js && node --check script.js && node --check api/quote-requests.js && node --check api/upload-files.js && node --check api/slice-estimate.js && node --check api/slice-callback.js && node --check lib/email-confirmation.js && node --check lib/quote-store.js && node --check lib/upload-store.js && node --check lib/slicer-estimator.js"
+    "check": "node --check admin.js && node --check script.js && node --check api/quote-requests.js && node --check api/upload-files.js && node --check api/gallery-images.js && node --check api/slice-estimate.js && node --check api/slice-callback.js && node --check lib/email-confirmation.js && node --check lib/quote-store.js && node --check lib/upload-store.js && node --check lib/gallery-store.js && node --check lib/slicer-estimator.js"
   },
   "dependencies": {
     "@neondatabase/serverless": "^1.1.0",

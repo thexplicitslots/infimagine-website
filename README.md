@@ -54,6 +54,20 @@ BLOB_ACCESS=public
 
 Use `public` Blob access for the current admin viewer and slicer worker flow. Private Blob storage needs signed download routes before inline preview/slicing.
 
+## Website gallery uploads
+
+The homepage Studio Gallery is managed from `/admin`. Uploads use Vercel Blob for image files and Neon Postgres for gallery metadata.
+
+Environment variables:
+
+```bash
+GALLERY_TABLE=gallery_items
+BLOB_READ_WRITE_TOKEN=...
+BLOB_ACCESS=public
+```
+
+The API creates the gallery table automatically on first use.
+
 ## External slicer worker estimates
 
 The admin panel can request real STL slice estimates through `/api/slice-estimate`. Vercel does not run PrusaSlicer directly. Instead, the API sends the selected uploaded file URL to an external slicer worker.

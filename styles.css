@@ -1543,6 +1543,149 @@ h3 {
   text-align: right;
 }
 
+.studio-gallery-section {
+  background:
+    radial-gradient(circle at 18% 8%, rgba(110, 231, 255, 0.08), transparent 26rem),
+    linear-gradient(180deg, #061014 0%, #020608 100%);
+}
+
+.studio-gallery-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 14px;
+}
+
+.studio-photo-card,
+.studio-gallery-empty {
+  position: relative;
+  overflow: hidden;
+  border: 1px solid rgba(110, 231, 255, 0.14);
+  border-radius: var(--radius);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.06), rgba(255, 255, 255, 0.022)),
+    rgba(5, 15, 21, 0.68);
+  box-shadow:
+    inset 0 0 34px rgba(110, 231, 255, 0.02),
+    0 18px 54px rgba(0, 0, 0, 0.24);
+}
+
+.studio-photo-card {
+  display: grid;
+  grid-template-rows: minmax(260px, 34vw) auto;
+  transition:
+    transform 220ms var(--ease-premium),
+    border-color 180ms ease,
+    box-shadow 180ms ease;
+}
+
+.studio-photo-card:first-child {
+  grid-column: span 2;
+}
+
+.studio-photo-card:hover {
+  transform: translateY(-5px);
+  border-color: rgba(110, 231, 255, 0.34);
+  box-shadow:
+    inset 0 0 42px rgba(110, 231, 255, 0.035),
+    0 24px 72px rgba(0, 0, 0, 0.34),
+    0 0 32px rgba(110, 231, 255, 0.08);
+}
+
+.studio-photo-media {
+  position: relative;
+  overflow: hidden;
+  border-bottom: 1px solid rgba(110, 231, 255, 0.12);
+  background:
+    linear-gradient(rgba(110, 231, 255, 0.045) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(110, 231, 255, 0.045) 1px, transparent 1px),
+    rgba(2, 8, 12, 0.86);
+  background-size: 34px 34px;
+}
+
+.studio-photo-media::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background:
+    linear-gradient(180deg, transparent 48%, rgba(2, 8, 12, 0.5)),
+    radial-gradient(circle at 72% 12%, rgba(110, 231, 255, 0.12), transparent 15rem);
+  opacity: 0.72;
+}
+
+.studio-photo-media img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  filter: saturate(0.92) contrast(1.04);
+  transition: transform 520ms var(--ease-premium);
+}
+
+.studio-photo-card:hover .studio-photo-media img {
+  transform: scale(1.035);
+}
+
+.studio-photo-copy {
+  display: grid;
+  gap: 9px;
+  padding: 18px;
+}
+
+.studio-photo-copy span,
+.studio-gallery-empty span {
+  color: rgba(110, 231, 255, 0.8);
+  font-size: 0.72rem;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.studio-photo-copy h3 {
+  margin: 0;
+  font-size: 1.12rem;
+}
+
+.studio-photo-copy p,
+.studio-gallery-empty p {
+  margin: 0;
+  color: var(--muted);
+}
+
+.studio-gallery-empty {
+  grid-column: 1 / -1;
+  min-height: 260px;
+  display: grid;
+  align-content: center;
+  justify-items: center;
+  gap: 10px;
+  padding: clamp(24px, 5vw, 46px);
+  text-align: center;
+}
+
+.studio-gallery-empty::before {
+  content: "";
+  position: absolute;
+  width: min(44vw, 320px);
+  aspect-ratio: 1;
+  border: 1px solid rgba(110, 231, 255, 0.24);
+  border-radius: 50%;
+  box-shadow:
+    inset 0 0 38px rgba(110, 231, 255, 0.035),
+    0 0 44px rgba(110, 231, 255, 0.08);
+  transform: rotateX(64deg) rotateZ(-14deg);
+}
+
+.studio-gallery-empty > * {
+  position: relative;
+  z-index: 1;
+}
+
+.studio-gallery-empty strong {
+  max-width: 20ch;
+  color: rgba(232, 246, 250, 0.92);
+  font-size: clamp(1.5rem, 3.2vw, 3rem);
+  line-height: 1.02;
+}
+
 .showcase {
   display: grid;
   grid-template-columns: 1fr 1fr 1fr;
@@ -2840,7 +2983,8 @@ textarea:focus {
   .project-gallery,
   .assurance-grid,
   .service-route-grid,
-  .seo-band-grid {
+  .seo-band-grid,
+  .studio-gallery-grid {
     grid-template-columns: 1fr 1fr;
   }
 
@@ -3059,6 +3203,7 @@ textarea:focus {
   .project-gallery,
   .assurance-grid,
   .service-route-grid,
+  .studio-gallery-grid,
   .seo-grid,
   .seo-grid.two,
   .seo-band-grid,
@@ -3084,6 +3229,12 @@ textarea:focus {
 
   .project-card {
     grid-template-rows: 170px 1fr;
+  }
+
+  .studio-photo-card,
+  .studio-photo-card:first-child {
+    grid-column: auto;
+    grid-template-rows: minmax(240px, 68vw) auto;
   }
 
   .project-copy {

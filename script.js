@@ -15,6 +15,8 @@ const aiOutput = document.querySelector("[data-ai-output]");
 const aiStatus = document.querySelector("[data-ai-status]");
 const fileInput = document.querySelector("[data-file-input]");
 const fileSummary = document.querySelector("[data-file-summary]");
+const studioGallery = document.querySelector("[data-studio-gallery]");
+const studioGalleryEmpty = document.querySelector("[data-studio-gallery-empty]");
 const year = document.querySelector("[data-year]");
 const totalQuoteSteps = quoteGroups.length;
 let currentQuoteStep = 1;
@@ -33,6 +35,8 @@ const revealTargets = [...new Set([
   ".showcase-item",
   ".preview-copy",
   ".product-preview",
+  ".studio-gallery-empty",
+  ".studio-photo-card",
   ".steps li",
   ".trust-card",
   ".assurance-grid article",
@@ -173,6 +177,68 @@ function formatBytes(bytes) {
     index += 1;
   }
   return `${value.toFixed(value >= 10 || index === 0 ? 0 : 1)} ${units[index]}`;
+}
+
+function escapeHtml(value) {
+  return String(value || "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
+}
+
+function renderStudioGallery(items = []) {
+  if (!studioGallery) return;
+
+  if (!items.length) {
+    if (studioGalleryEmpty) {
+      studioGalleryEmpty.querySelector("span").textContent = "Studio archive";
+      studioGalleryEmpty.querySelector("strong").textContent = "Finished project photos will appear here.";
+      studioGalleryEmpty.querySelector("p").textContent = "The gallery is ready for real prints, prototypes, and material details.";
+    }
+    return;
+  }
+
+  studioGallery.innerHTML = items
+    .map((item) => `
+      <article class="studio-photo-card">
+        <div class="studio-photo-media">
+          <img src="${escapeHtml(item.imageUrl)}" alt="${escapeHtml(item.altText || item.title)}" width="900" height="700" loading="lazy" decoding="async" />
+        </div>
+        <div class="studio-photo-copy">
+          <span>${escapeHtml(item.category || "Studio print")}</span>
+          <h3>${escapeHtml(item.title || "Finished InfiMagine project")}</h3>
+          <p>${escapeHtml(item.altText || "A finished custom 3D printed project from InfiMagine.")}</p>
+        </div>
+      </article>
+    `)
+    .join("");
+
+  window.requestAnimationFrame(() => {
+    studioGallery.querySelectorAll(".studio-photo-card").forEach((card, index) => {
+      card.classList.add("reveal");
+      card.style.transitionDelay = `${Math.min(index, 3) * 70}ms`;
+      window.requestAnimationFrame(() => card.classList.add("is-visible"));
+    });
+  });
+}
+
+async function loadStudioGallery() {
+  if (!studioGallery) return;
+
+  try {
+    const response = await fetch("/api/gallery-images");
+    const result = await response.json();
+    if (!response.ok) throw new Error(result.error || "Gallery unavailable.");
+    renderStudioGallery(Array.isArray(result.items) ? result.items : []);
+  } catch {
+    if (studioGalleryEmpty) {
+      studioGalleryEmpty.querySelector("span").textContent = "Studio archive";
+      studioGalleryEmpty.querySelector("strong").textContent = "Gallery is temporarily unavailable.";
+      studioGalleryEmpty.querySelector("p").textContent = "Finished project photos will return once the image service is reachable.";
+    }
+  }
 }
 
 function selectedFiles() {
@@ -629,3 +695,4 @@ if (year) {
 updateHeader();
 initReveals();
 updateQuoteStep(1);
+loadStudioGallery();
