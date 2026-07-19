@@ -62,11 +62,11 @@ Environment variables:
 
 ```bash
 GALLERY_TABLE=gallery_items
+GALLERY_BLOB_ACCESS=public
 BLOB_READ_WRITE_TOKEN=...
-BLOB_ACCESS=public
 ```
 
-The API creates the gallery table automatically on first use.
+The API creates the gallery table automatically on first use. Gallery uploads default to public Blob assets so they render on the website. Existing private gallery images are served through short-lived signed display URLs.
 
 ## External slicer worker estimates
 
