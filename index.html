@@ -764,6 +764,38 @@
       </section>
     </main>
 
+    <div class="gallery-lightbox" data-gallery-lightbox hidden role="dialog" aria-modal="true" aria-label="Product image gallery">
+      <div class="gallery-lightbox-backdrop" data-gallery-lightbox-close></div>
+      <section class="gallery-lightbox-shell">
+        <button class="gallery-lightbox-close" type="button" data-gallery-lightbox-close aria-label="Close gallery">
+          <svg viewBox="0 0 24 24" focusable="false" aria-hidden="true">
+            <path d="m6 6 12 12" />
+            <path d="M18 6 6 18" />
+          </svg>
+        </button>
+        <div class="gallery-lightbox-media">
+          <button class="gallery-lightbox-nav prev" type="button" data-gallery-prev aria-label="Previous image">
+            <svg viewBox="0 0 24 24" focusable="false" aria-hidden="true">
+              <path d="M15 5 8 12l7 7" />
+            </svg>
+          </button>
+          <img data-gallery-lightbox-image src="" alt="" width="1200" height="900" />
+          <button class="gallery-lightbox-nav next" type="button" data-gallery-next aria-label="Next image">
+            <svg viewBox="0 0 24 24" focusable="false" aria-hidden="true">
+              <path d="m9 5 7 7-7 7" />
+            </svg>
+          </button>
+        </div>
+        <div class="gallery-lightbox-info">
+          <span data-gallery-lightbox-category>Studio print</span>
+          <h3 data-gallery-lightbox-title>Project gallery</h3>
+          <p data-gallery-lightbox-caption></p>
+          <small data-gallery-lightbox-count></small>
+          <div class="gallery-lightbox-thumbs" data-gallery-lightbox-thumbs></div>
+        </div>
+      </section>
+    </div>
+
     <footer class="footer">
       <div class="footer-copy">
         <span>© <span data-year></span> InfiMagine</span>

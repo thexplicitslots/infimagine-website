@@ -1196,6 +1196,14 @@ textarea:focus {
   padding: 12px;
 }
 
+.gallery-file-field small {
+  display: block;
+  margin-top: 10px;
+  color: var(--muted);
+  font-size: 0.78rem;
+  font-weight: 750;
+}
+
 .gallery-file-field input[type="file"]::file-selector-button {
   margin-right: 12px;
   border: 1px solid rgba(110, 231, 255, 0.2);
@@ -1263,14 +1271,14 @@ textarea:focus {
   border-bottom: 1px solid rgba(110, 231, 255, 0.1);
 }
 
-.gallery-admin-card div {
+.gallery-admin-body {
   display: grid;
   align-content: start;
   gap: 7px;
   padding: 13px;
 }
 
-.gallery-admin-card span {
+.gallery-admin-kicker {
   color: rgba(110, 231, 255, 0.8);
   font-size: 0.68rem;
   font-weight: 900;
@@ -1287,6 +1295,34 @@ textarea:focus {
   margin: 0;
   color: var(--muted);
   font-size: 0.84rem;
+}
+
+.gallery-admin-thumbs {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 5px;
+  margin-top: 4px;
+}
+
+.gallery-admin-thumbs span {
+  position: relative;
+  overflow: hidden;
+  aspect-ratio: 4 / 3;
+  border: 1px solid rgba(110, 231, 255, 0.12);
+  border-radius: 5px;
+  background: rgba(255, 255, 255, 0.035);
+}
+
+.gallery-admin-thumbs span.is-cover {
+  border-color: rgba(110, 231, 255, 0.42);
+  box-shadow: 0 0 18px rgba(110, 231, 255, 0.08);
+}
+
+.gallery-admin-thumbs img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border: 0;
 }
 
 .gallery-admin-card button {

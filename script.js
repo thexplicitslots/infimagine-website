@@ -17,11 +17,23 @@ const fileInput = document.querySelector("[data-file-input]");
 const fileSummary = document.querySelector("[data-file-summary]");
 const studioGallery = document.querySelector("[data-studio-gallery]");
 const studioGalleryEmpty = document.querySelector("[data-studio-gallery-empty]");
+const galleryLightbox = document.querySelector("[data-gallery-lightbox]");
+const galleryLightboxImage = document.querySelector("[data-gallery-lightbox-image]");
+const galleryLightboxTitle = document.querySelector("[data-gallery-lightbox-title]");
+const galleryLightboxCategory = document.querySelector("[data-gallery-lightbox-category]");
+const galleryLightboxCaption = document.querySelector("[data-gallery-lightbox-caption]");
+const galleryLightboxCount = document.querySelector("[data-gallery-lightbox-count]");
+const galleryLightboxThumbs = document.querySelector("[data-gallery-lightbox-thumbs]");
+const galleryLightboxPrev = document.querySelector("[data-gallery-prev]");
+const galleryLightboxNext = document.querySelector("[data-gallery-next]");
 const year = document.querySelector("[data-year]");
 const totalQuoteSteps = quoteGroups.length;
 let currentQuoteStep = 1;
 let currentEstimateRange = "₹2,399 - ₹5,199";
 let currentAttachments = [];
+let studioGalleryItems = [];
+let activeGalleryProductIndex = 0;
+let activeGalleryImageIndex = 0;
 const maxUploadFiles = 4;
 const maxUploadBytes = 100 * 1024 * 1024;
 const maxUploadTotalBytes = 160 * 1024 * 1024;
@@ -188,8 +200,17 @@ function escapeHtml(value) {
     .replace(/'/g, "&#039;");
 }
 
+function galleryProductImages(item) {
+  return Array.isArray(item?.images) && item.images.length ? item.images : [item].filter(Boolean);
+}
+
+function galleryImageCountLabel(count) {
+  return `${count} image${count === 1 ? "" : "s"}`;
+}
+
 function renderStudioGallery(items = []) {
   if (!studioGallery) return;
+  studioGalleryItems = items;
 
   if (!items.length) {
     if (studioGalleryEmpty) {
@@ -201,18 +222,26 @@ function renderStudioGallery(items = []) {
   }
 
   studioGallery.innerHTML = items
-    .map((item) => `
+    .map((item, index) => {
+      const images = galleryProductImages(item);
+      const imageCount = images.length;
+      return `
       <article class="studio-photo-card">
         <div class="studio-photo-media">
           <img src="${escapeHtml(item.imageUrl)}" alt="${escapeHtml(item.altText || item.title)}" width="900" height="700" loading="lazy" decoding="async" />
+          <span class="studio-photo-count">${escapeHtml(galleryImageCountLabel(imageCount))}</span>
         </div>
         <div class="studio-photo-copy">
           <span>${escapeHtml(item.category || "Studio print")}</span>
           <h3>${escapeHtml(item.title || "Finished InfiMagine project")}</h3>
           <p>${escapeHtml(item.altText || "A finished custom 3D printed project from InfiMagine.")}</p>
+          <button class="studio-gallery-open" type="button" data-gallery-product-index="${index}">
+            View set
+          </button>
         </div>
       </article>
-    `)
+    `;
+    })
     .join("");
 
   window.requestAnimationFrame(() => {
@@ -222,6 +251,56 @@ function renderStudioGallery(items = []) {
       window.requestAnimationFrame(() => card.classList.add("is-visible"));
     });
   });
+}
+
+function renderGalleryLightbox() {
+  if (!galleryLightbox || !galleryLightboxImage) return;
+  const product = studioGalleryItems[activeGalleryProductIndex];
+  const images = galleryProductImages(product);
+  const image = images[activeGalleryImageIndex] || images[0];
+  if (!product || !image) return;
+
+  galleryLightboxImage.src = image.imageUrl || product.imageUrl || "";
+  galleryLightboxImage.alt = image.altText || product.altText || product.title || "InfiMagine gallery image";
+  if (galleryLightboxTitle) galleryLightboxTitle.textContent = product.title || "Studio project";
+  if (galleryLightboxCategory) galleryLightboxCategory.textContent = product.category || "Studio print";
+  if (galleryLightboxCaption) galleryLightboxCaption.textContent = image.altText || product.altText || "";
+  if (galleryLightboxCount) galleryLightboxCount.textContent = `${activeGalleryImageIndex + 1} of ${images.length}`;
+  if (galleryLightboxPrev) galleryLightboxPrev.hidden = images.length < 2;
+  if (galleryLightboxNext) galleryLightboxNext.hidden = images.length < 2;
+
+  if (galleryLightboxThumbs) {
+    galleryLightboxThumbs.innerHTML = images
+      .map((thumb, index) => `
+        <button class="${index === activeGalleryImageIndex ? "is-active" : ""}" type="button" data-gallery-thumb-index="${index}" aria-label="Show image ${index + 1}">
+          <img src="${escapeHtml(thumb.imageUrl)}" alt="" width="96" height="72" loading="lazy" decoding="async" />
+        </button>
+      `)
+      .join("");
+  }
+}
+
+function openGalleryLightbox(productIndex, imageIndex = 0) {
+  if (!galleryLightbox) return;
+  activeGalleryProductIndex = productIndex;
+  activeGalleryImageIndex = imageIndex;
+  renderGalleryLightbox();
+  galleryLightbox.hidden = false;
+  document.body.classList.add("gallery-lightbox-open");
+}
+
+function closeGalleryLightbox() {
+  if (!galleryLightbox) return;
+  galleryLightbox.hidden = true;
+  document.body.classList.remove("gallery-lightbox-open");
+}
+
+function moveGalleryImage(direction) {
+  const product = studioGalleryItems[activeGalleryProductIndex];
+  const images = galleryProductImages(product);
+  if (images.length < 2) return;
+  activeGalleryImageIndex = (activeGalleryImageIndex + direction + images.length) % images.length;
+  renderGalleryLightbox();
 }
 
 async function loadStudioGallery() {
@@ -676,6 +755,15 @@ mobileMenu?.addEventListener("click", (event) => {
 window.addEventListener("keydown", (event) => {
   if (event.key === "Escape") {
     setMobileMenu(false);
+    closeGalleryLightbox();
+  }
+
+  if (!galleryLightbox?.hidden && event.key === "ArrowLeft") {
+    moveGalleryImage(-1);
+  }
+
+  if (!galleryLightbox?.hidden && event.key === "ArrowRight") {
+    moveGalleryImage(1);
   }
 });
 form?.addEventListener("input", updateEstimate);
@@ -688,6 +776,23 @@ quoteSteps.forEach((button) => {
 });
 aiHelperButton?.addEventListener("click", refineWithAi);
 quoteSubmitButton?.addEventListener("click", saveQuoteRequest);
+studioGallery?.addEventListener("click", (event) => {
+  const trigger = event.target.closest("[data-gallery-product-index]");
+  if (!trigger) return;
+  openGalleryLightbox(Number(trigger.dataset.galleryProductIndex || 0));
+});
+galleryLightbox?.addEventListener("click", (event) => {
+  if (event.target.closest("[data-gallery-lightbox-close]")) {
+    closeGalleryLightbox();
+  }
+  const thumb = event.target.closest("[data-gallery-thumb-index]");
+  if (thumb) {
+    activeGalleryImageIndex = Number(thumb.dataset.galleryThumbIndex || 0);
+    renderGalleryLightbox();
+  }
+});
+galleryLightboxPrev?.addEventListener("click", () => moveGalleryImage(-1));
+galleryLightboxNext?.addEventListener("click", () => moveGalleryImage(1));
 
 if (year) {
   year.textContent = new Date().getFullYear();

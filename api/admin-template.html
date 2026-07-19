@@ -261,12 +261,12 @@
           <div class="panel-heading">
             <div>
               <p class="eyebrow">Website gallery</p>
-              <h2>Upload finished work</h2>
+              <h2>Upload product sets</h2>
             </div>
           </div>
           <div class="gallery-upload-grid">
             <label>
-              <span>Photo title</span>
+              <span>Product title</span>
               <input data-gallery-title placeholder="Example: Voron nylon bracket test" />
             </label>
             <label>
@@ -281,14 +281,15 @@
               </select>
             </label>
             <label class="full-field">
-              <span>Alt text / caption</span>
-              <input data-gallery-alt placeholder="Short visual description for SEO and accessibility" />
+              <span>Product caption</span>
+              <input data-gallery-alt placeholder="Short description for SEO, accessibility, and the gallery viewbox" />
             </label>
             <label class="gallery-file-field full-field">
-              <span>Image file</span>
-              <input data-gallery-file type="file" accept="image/jpeg,image/png,image/webp,image/gif" />
+              <span>Image files</span>
+              <input data-gallery-file type="file" accept="image/jpeg,image/png,image/webp,image/gif" multiple />
+              <small>Select up to 8 photos. The first photo becomes the cover.</small>
             </label>
-            <button class="button primary" type="button" data-gallery-upload>Upload to website gallery</button>
+            <button class="button primary" type="button" data-gallery-upload>Publish product set</button>
             <p class="gallery-upload-status" data-gallery-status aria-live="polite"></p>
           </div>
           <div class="gallery-admin-list" data-gallery-admin-list></div>

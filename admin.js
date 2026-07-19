@@ -172,6 +172,7 @@ let notesSaveTimer;
 let activeViewer = null;
 let slicerEstimates = {};
 let galleryItems = [];
+const maxGalleryImages = 8;
 
 const materialProfiles = [
   { match: "peek", label: "PEEK", rate: 25000 },
@@ -1010,25 +1011,38 @@ function renderGalleryAdmin() {
     galleryFields.list.innerHTML = `
       <div class="gallery-admin-empty">
         <strong>No website photos yet.</strong>
-        <p>Upload finished prints, prototypes, material tests, or detail shots to publish them on the homepage gallery.</p>
+        <p>Upload product sets with multiple angles, detail shots, and material close-ups to publish them on the homepage gallery.</p>
       </div>
     `;
     return;
   }
 
   galleryFields.list.innerHTML = galleryItems
-    .map((item) => `
-      <article class="gallery-admin-card">
-        <img src="${escapeHtml(item.imageUrl)}" alt="${escapeHtml(item.altText || item.title)}" width="480" height="360" loading="lazy" decoding="async" />
-        <div>
-          <span>${escapeHtml(item.category || "Gallery")}</span>
-          <strong>${escapeHtml(item.title || "Studio project")}</strong>
-          <p>${escapeHtml(item.altText || "No caption saved.")}</p>
-          <small>${escapeHtml([item.contentType, item.size ? formatBytes(item.size) : ""].filter(Boolean).join(" · "))}</small>
-        </div>
-        <button type="button" data-gallery-delete="${escapeHtml(item.id)}">Remove</button>
-      </article>
-    `)
+    .map((item) => {
+      const images = Array.isArray(item.images) && item.images.length ? item.images : [item];
+      return `
+        <article class="gallery-admin-card">
+          <img src="${escapeHtml(item.imageUrl || images[0]?.imageUrl)}" alt="${escapeHtml(item.altText || item.title)}" width="480" height="360" loading="lazy" decoding="async" />
+          <div class="gallery-admin-body">
+            <span class="gallery-admin-kicker">${escapeHtml(item.category || "Gallery")}</span>
+            <strong>${escapeHtml(item.title || "Studio project")}</strong>
+            <p>${escapeHtml(item.altText || "No caption saved.")}</p>
+            <small>${escapeHtml(`${images.length} image${images.length === 1 ? "" : "s"} · ${item.size ? formatBytes(item.size) : "Stored in Blob"}`)}</small>
+            <div class="gallery-admin-thumbs" aria-label="${escapeHtml(item.title || "Gallery")} thumbnails">
+              ${images
+                .slice(0, 6)
+                .map((image, index) => `
+                  <span class="${index === 0 ? "is-cover" : ""}">
+                    <img src="${escapeHtml(image.imageUrl)}" alt="" width="72" height="54" loading="lazy" decoding="async" />
+                  </span>
+                `)
+                .join("")}
+            </div>
+          </div>
+          <button type="button" data-gallery-delete="${escapeHtml(item.id)}">Remove product set</button>
+        </article>
+      `;
+    })
     .join("");
 }
 
@@ -1114,29 +1128,43 @@ async function saveGalleryImage(item) {
 }
 
 async function uploadGalleryPhoto() {
-  const file = galleryFields.file?.files?.[0];
+  const allFiles = [...(galleryFields.file?.files || [])];
+  const files = allFiles.slice(0, maxGalleryImages);
   const title = galleryFields.title?.value.trim() || "";
   const category = galleryFields.category?.value || "Finished print";
   const altText = galleryFields.alt?.value.trim() || title;
 
-  if (!file) {
-    setGalleryStatus("Choose an image first.", "warn");
+  if (!files.length) {
+    setGalleryStatus("Choose at least one image first.", "warn");
     return;
   }
 
   galleryFields.upload.disabled = true;
-  setGalleryStatus("Preparing gallery upload...");
+  setGalleryStatus(allFiles.length > maxGalleryImages ? `Preparing the first ${maxGalleryImages} images...` : "Preparing gallery upload...");
 
   try {
-    const signed = await signGalleryImage(file);
-    setGalleryStatus(`Uploading ${file.name}...`);
-    const uploaded = await uploadGalleryImage(file, signed);
-    setGalleryStatus("Publishing image to website gallery...");
+    const images = [];
+    const fallbackTitle = title || files[0].name.replace(/\.[^.]+$/, "").replace(/[-_]+/g, " ");
+
+    for (const [index, file] of files.entries()) {
+      setGalleryStatus(`Preparing image ${index + 1} of ${files.length}...`);
+      const signed = await signGalleryImage(file);
+      setGalleryStatus(`Uploading image ${index + 1} of ${files.length}...`);
+      const uploaded = await uploadGalleryImage(file, signed);
+      images.push({
+        ...uploaded,
+        altText: altText || `${fallbackTitle} view ${index + 1}`,
+        imageOrder: index,
+        isCover: index === 0,
+      });
+    }
+
+    setGalleryStatus("Publishing product set to website gallery...");
     const item = await saveGalleryImage({
-      ...uploaded,
-      title: title || file.name.replace(/\.[^.]+$/, "").replace(/[-_]+/g, " "),
+      title: fallbackTitle,
       category,
       altText: altText || title || "Finished InfiMagine 3D printed project",
+      images,
     });
 
     galleryItems = [item, ...galleryItems];
@@ -1144,7 +1172,7 @@ async function uploadGalleryPhoto() {
     galleryFields.title.value = "";
     galleryFields.alt.value = "";
     galleryFields.file.value = "";
-    setGalleryStatus("Gallery image published on the website.", "success");
+    setGalleryStatus(`Product set published with ${images.length} image${images.length === 1 ? "" : "s"}.`, "success");
   } catch (error) {
     setGalleryStatus(error.message || "Gallery upload failed.", "error");
   } finally {
@@ -1155,7 +1183,7 @@ async function uploadGalleryPhoto() {
 async function deleteGalleryPhoto(id, button) {
   button.disabled = true;
   button.textContent = "Removing...";
-  setGalleryStatus("Removing gallery image...");
+  setGalleryStatus("Removing product set...");
 
   try {
     const response = await fetch("/api/gallery-images", {
@@ -1167,7 +1195,7 @@ async function deleteGalleryPhoto(id, button) {
     if (!response.ok) throw new Error(result.error || "Could not remove gallery image.");
     galleryItems = galleryItems.filter((item) => item.id !== id);
     renderGalleryAdmin();
-    setGalleryStatus("Gallery image removed.", "success");
+    setGalleryStatus("Product set removed.", "success");
   } catch (error) {
     setGalleryStatus(error.message || "Could not remove gallery image.", "error");
     button.disabled = false;

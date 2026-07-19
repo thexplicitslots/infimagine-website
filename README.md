@@ -56,7 +56,7 @@ Use `public` Blob access for the current admin viewer and slicer worker flow. Pr
 
 ## Website gallery uploads
 
-The homepage Studio Gallery is managed from `/admin`. Uploads use Vercel Blob for image files and Neon Postgres for gallery metadata.
+The homepage Studio Gallery is managed from `/admin`. Uploads use Vercel Blob for image files and Neon Postgres for gallery metadata. Multiple uploaded images are grouped into one product set with the first image used as the cover.
 
 Environment variables:
 
@@ -66,7 +66,7 @@ GALLERY_BLOB_ACCESS=public
 BLOB_READ_WRITE_TOKEN=...
 ```
 
-The API creates the gallery table automatically on first use. Gallery uploads default to public Blob assets so they render on the website. Existing private gallery images are served through short-lived signed display URLs.
+The API creates and migrates the gallery table automatically on first use. Gallery uploads default to public Blob assets so they render on the website. Existing private gallery images are served through short-lived signed display URLs.
 
 ## External slicer worker estimates
 
