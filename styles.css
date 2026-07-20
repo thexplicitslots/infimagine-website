@@ -687,20 +687,21 @@ h3 {
   position: relative;
   z-index: 1;
   display: grid;
-  grid-template-columns: 0.7fr 1.3fr;
-  gap: clamp(28px, 6vw, 72px);
-  align-items: end;
+  grid-template-columns: minmax(0, 680px);
+  gap: 22px;
+  justify-content: start;
+  align-items: start;
 }
 
 .statement p {
-  max-width: 360px;
+  max-width: 460px;
   margin: 0;
   color: rgba(255, 255, 255, 0.7);
   font-size: 1.25rem;
 }
 
 .statement h2 {
-  max-width: 10ch;
+  max-width: 11ch;
   color: var(--white);
 }
 
