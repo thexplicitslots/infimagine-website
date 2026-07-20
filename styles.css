@@ -2977,67 +2977,224 @@ textarea:focus {
   gap: 12px;
   flex-wrap: wrap;
   justify-content: flex-end;
+  max-width: 520px;
+}
+
+.social-spotlight {
+  position: relative;
+  flex: 1 1 100%;
+  overflow: hidden;
+  display: grid;
+  gap: 12px;
+  margin-top: 12px;
+  padding: 18px;
+  border: 1px solid rgba(110, 231, 255, 0.2);
+  border-radius: var(--radius);
+  background:
+    radial-gradient(circle at 100% 0%, rgba(110, 231, 255, 0.16), transparent 12rem),
+    linear-gradient(145deg, rgba(255, 255, 255, 0.07), rgba(255, 255, 255, 0.025)),
+    rgba(4, 14, 19, 0.72);
+  box-shadow:
+    inset 0 0 38px rgba(110, 231, 255, 0.035),
+    0 22px 70px rgba(0, 0, 0, 0.24),
+    0 0 36px rgba(110, 231, 255, 0.06);
+}
+
+.social-spotlight::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  opacity: 0.42;
+  pointer-events: none;
+  background:
+    linear-gradient(rgba(110, 231, 255, 0.06) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(110, 231, 255, 0.06) 1px, transparent 1px);
+  background-size: 34px 34px;
+  mask-image: linear-gradient(135deg, black, transparent 74%);
+}
+
+.social-spotlight > * {
+  position: relative;
+  z-index: 1;
+}
+
+.social-spotlight > strong {
+  color: rgba(232, 246, 250, 0.94);
+  font-size: clamp(1.05rem, 1.5vw, 1.35rem);
+  line-height: 1.2;
 }
 
 .footer {
+  position: relative;
+  overflow: hidden;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 18px;
-  padding: 28px clamp(18px, 4vw, 56px);
+  gap: 28px;
+  padding: 34px clamp(18px, 4vw, 56px);
   border-top: 1px solid var(--line);
-  background: #020507;
+  background:
+    radial-gradient(circle at 85% 0%, rgba(110, 231, 255, 0.12), transparent 24rem),
+    linear-gradient(180deg, #03080b 0%, #020507 100%);
   color: var(--muted);
   font-size: 0.92rem;
 }
 
+.footer::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  opacity: 0.32;
+  pointer-events: none;
+  background:
+    linear-gradient(90deg, transparent, rgba(110, 231, 255, 0.08), transparent),
+    repeating-linear-gradient(90deg, rgba(255, 255, 255, 0.03) 0 1px, transparent 1px 88px);
+}
+
 .footer-copy {
+  position: relative;
+  z-index: 1;
   display: flex;
   flex-wrap: wrap;
   gap: 10px 18px;
 }
 
+.social-panel {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  gap: 10px;
+  justify-items: end;
+}
+
+.social-kicker {
+  color: rgba(110, 231, 255, 0.82);
+  font-size: 0.72rem;
+  font-weight: 900;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
 .social-links {
   display: flex;
   align-items: center;
-  gap: 10px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 12px;
+}
+
+.social-links-compact {
+  justify-content: stretch;
 }
 
 .social-links a {
-  display: grid;
-  width: 42px;
-  height: 42px;
-  place-items: center;
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  display: inline-grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: 10px;
+  min-width: 150px;
+  min-height: 58px;
+  padding: 10px 13px;
   border: 1px solid rgba(255, 255, 255, 0.13);
-  border-radius: 50%;
-  background: rgba(255, 255, 255, 0.035);
-  color: rgba(232, 246, 250, 0.72);
+  border-radius: var(--radius);
+  background:
+    linear-gradient(135deg, rgba(110, 231, 255, 0.085), transparent 62%),
+    rgba(255, 255, 255, 0.04);
+  color: rgba(232, 246, 250, 0.78);
+  box-shadow:
+    inset 0 0 24px rgba(110, 231, 255, 0.025),
+    0 14px 36px rgba(0, 0, 0, 0.16);
   transition:
-    transform 180ms ease,
+    transform 220ms var(--ease-premium),
     color 180ms ease,
     border-color 180ms ease,
     background 180ms ease,
     box-shadow 180ms ease;
 }
 
+.social-links a::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  translate: -120% 0;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.16), transparent);
+  transition: translate 640ms ease;
+}
+
+.social-links a::after {
+  content: "";
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: rgba(110, 231, 255, 0.78);
+  box-shadow: 0 0 16px rgba(110, 231, 255, 0.54);
+}
+
 .social-links a:hover {
-  transform: translateY(-2px);
-  border-color: rgba(110, 231, 255, 0.34);
-  background: rgba(110, 231, 255, 0.075);
+  transform: translateY(-4px);
+  border-color: rgba(110, 231, 255, 0.42);
+  background:
+    linear-gradient(135deg, rgba(110, 231, 255, 0.15), transparent 62%),
+    rgba(110, 231, 255, 0.075);
   color: rgba(255, 255, 255, 0.96);
   box-shadow:
-    inset 0 0 22px rgba(110, 231, 255, 0.04),
-    0 0 28px rgba(110, 231, 255, 0.1);
+    inset 0 0 28px rgba(110, 231, 255, 0.055),
+    0 18px 54px rgba(0, 0, 0, 0.26),
+    0 0 34px rgba(110, 231, 255, 0.12);
+}
+
+.social-links a:hover::before {
+  translate: 120% 0;
 }
 
 .social-links svg {
-  width: 19px;
-  height: 19px;
+  position: relative;
+  z-index: 1;
+  width: 21px;
+  height: 21px;
+  flex: 0 0 auto;
   fill: none;
   stroke: currentColor;
   stroke-width: 1.75;
   stroke-linecap: round;
   stroke-linejoin: round;
+  filter: drop-shadow(0 0 10px rgba(110, 231, 255, 0.2));
+}
+
+.social-links span {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  min-width: 0;
+  gap: 1px;
+}
+
+.social-links strong,
+.social-links small {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.social-links strong {
+  color: rgba(255, 255, 255, 0.94);
+  font-size: 0.86rem;
+  font-weight: 900;
+  line-height: 1.15;
+}
+
+.social-links small {
+  color: rgba(181, 204, 213, 0.75);
+  font-size: 0.72rem;
+  font-weight: 750;
+  line-height: 1.2;
 }
 
 .reveal {
@@ -3836,12 +3993,17 @@ textarea:focus {
   .footer {
     flex-direction: column;
     align-items: flex-start;
-    padding: 28px 18px;
+    padding: 30px 18px;
   }
 
   .footer-copy {
     flex-direction: column;
     gap: 6px;
+  }
+
+  .social-panel {
+    width: 100%;
+    justify-items: start;
   }
 
   .contact-facts span {
@@ -3856,8 +4018,9 @@ textarea:focus {
   }
 
   .social-links a {
-    width: 46px;
-    height: 46px;
+    flex: 1 1 178px;
+    min-width: min(100%, 178px);
+    min-height: 56px;
   }
 }
 
@@ -3868,6 +4031,14 @@ textarea:focus {
 
   h1 {
     font-size: clamp(2.55rem, 13.5vw, 3.7rem);
+  }
+
+  .social-spotlight {
+    padding: 16px;
+  }
+
+  .social-links a {
+    flex-basis: 100%;
   }
 
   .hero-actions {
