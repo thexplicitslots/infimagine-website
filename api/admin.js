@@ -24,7 +24,8 @@ function loginHtml(request) {
     <meta name="robots" content="noindex,nofollow" />
     <meta name="theme-color" content="#081014" />
     <title>InfiMagine Admin Login</title>
-    <link rel="icon" type="image/png" sizes="32x32" href="/assets/favicon-32.png" />
+    <link rel="icon" href="/favicon.ico?v=20260720" sizes="any" />
+    <link rel="icon" type="image/png" sizes="32x32" href="/assets/favicon-32.png?v=20260720" />
     <link rel="stylesheet" href="/admin.css" />
   </head>
   <body class="login-body">
