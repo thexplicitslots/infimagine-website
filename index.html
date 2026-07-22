@@ -43,21 +43,90 @@
     <script type="application/ld+json">
       {
         "@context": "https://schema.org",
-        "@type": "ProfessionalService",
-        "name": "InfiMagine3D",
-        "url": "https://infimagine.com/",
-        "logo": "https://infimagine.com/assets/icon-512.png",
-        "image": "https://infimagine.com/assets/icon-512.png",
-        "email": "admin@infimagine.com",
-        "description": "Premium custom 3D printing studio turning sketches, references, and concepts into gifts, prototypes, models, and functional parts.",
-        "areaServed": "India",
-        "slogan": "Ideas, engineered into reality.",
-        "serviceType": [
-          "Custom 3D printing",
-          "Prototype 3D printing",
-          "Personalized 3D printed gifts",
-          "3D printed models and miniatures",
-          "Repair and utility parts"
+        "@graph": [
+          {
+            "@type": "ProfessionalService",
+            "@id": "https://infimagine.com/#business",
+            "name": "InfiMagine3D",
+            "url": "https://infimagine.com/",
+            "logo": "https://infimagine.com/assets/icon-512.png",
+            "image": "https://infimagine.com/assets/icon-512.png",
+            "email": "admin@infimagine.com",
+            "priceRange": "INR 1,500+",
+            "description": "Premium custom 3D printing studio turning sketches, references, and concepts into gifts, prototypes, models, and functional parts.",
+            "areaServed": {
+              "@type": "Country",
+              "name": "India"
+            },
+            "slogan": "Ideas, engineered into reality.",
+            "sameAs": [
+              "https://www.instagram.com/infimagine3d/",
+              "https://x.com/infimagine3d"
+            ],
+            "contactPoint": {
+              "@type": "ContactPoint",
+              "contactType": "customer support",
+              "email": "admin@infimagine.com",
+              "url": "https://infimagine.com/#estimate",
+              "areaServed": "IN",
+              "availableLanguage": ["English", "Hindi"]
+            },
+            "serviceType": [
+              "Custom 3D printing",
+              "Prototype 3D printing",
+              "Personalized 3D printed gifts",
+              "3D printed models and miniatures",
+              "Repair and utility parts"
+            ]
+          },
+          {
+            "@type": "WebSite",
+            "@id": "https://infimagine.com/#website",
+            "name": "InfiMagine3D",
+            "url": "https://infimagine.com/",
+            "publisher": {
+              "@id": "https://infimagine.com/#business"
+            },
+            "inLanguage": "en"
+          },
+          {
+            "@type": "FAQPage",
+            "@id": "https://infimagine.com/#faq",
+            "mainEntity": [
+              {
+                "@type": "Question",
+                "name": "Do I need a 3D file?",
+                "acceptedAnswer": {
+                  "@type": "Answer",
+                  "text": "No. A rough sketch, image, screenshot, dimensions, or description is enough to begin. If CAD work is needed, InfiMagine3D guides that before printing."
+                }
+              },
+              {
+                "@type": "Question",
+                "name": "Can you help improve my idea?",
+                "acceptedAnswer": {
+                  "@type": "Answer",
+                  "text": "Yes. The AI Design Explorer and review process help expand form, function, personalization, and material possibilities before the print route is finalized."
+                }
+              },
+              {
+                "@type": "Question",
+                "name": "How accurate is the instant estimate?",
+                "acceptedAnswer": {
+                  "@type": "Answer",
+                  "text": "It is a starting range. Final pricing depends on design complexity, material, strength needs, finishing, print time, and delivery preference."
+                }
+              },
+              {
+                "@type": "Question",
+                "name": "Can you print functional parts?",
+                "acceptedAnswer": {
+                  "@type": "Answer",
+                  "text": "Yes. For functional parts, InfiMagine3D reviews load, heat, fit, tolerances, and material options such as PETG, ABS/ASA, Nylon, or PEEK where appropriate."
+                }
+              }
+            ]
+          }
         ]
       }
     </script>

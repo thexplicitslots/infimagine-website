@@ -34,18 +34,60 @@
     <script type="application/ld+json">
       {
         "@context": "https://schema.org",
-        "@type": "Service",
-        "name": "Personalized 3D Printed Gifts",
-        "serviceType": "Personalized 3D printed gifts",
-        "provider": {
-          "@type": "ProfessionalService",
-          "name": "InfiMagine3D",
-          "url": "https://infimagine.com/",
-          "email": "admin@infimagine.com",
-          "logo": "https://infimagine.com/assets/icon-512.png"
-        },
-        "areaServed": "India",
-        "description": "Personalized 3D printed gifts including custom nameplates, keepsakes, miniatures, desk objects, decor, and one-of-one pieces."
+        "@graph": [
+          {
+            "@type": "Service",
+            "@id": "https://infimagine.com/personalized-3d-printed-gifts#service",
+            "name": "Personalized 3D Printed Gifts",
+            "url": "https://infimagine.com/personalized-3d-printed-gifts",
+            "serviceType": "Personalized 3D printed gifts",
+            "category": "3D printing service",
+            "provider": {
+              "@type": "ProfessionalService",
+              "@id": "https://infimagine.com/#business",
+              "name": "InfiMagine3D",
+              "url": "https://infimagine.com/",
+              "email": "admin@infimagine.com",
+              "logo": "https://infimagine.com/assets/icon-512.png",
+              "priceRange": "INR 1,500+",
+              "sameAs": [
+                "https://www.instagram.com/infimagine3d/",
+                "https://x.com/infimagine3d"
+              ],
+              "contactPoint": {
+                "@type": "ContactPoint",
+                "contactType": "customer support",
+                "email": "admin@infimagine.com",
+                "url": "https://infimagine.com/#estimate",
+                "areaServed": "IN",
+                "availableLanguage": ["English", "Hindi"]
+              }
+            },
+            "areaServed": {
+              "@type": "Country",
+              "name": "India"
+            },
+            "description": "Personalized 3D printed gifts including custom nameplates, keepsakes, miniatures, desk objects, decor, and one-of-one pieces."
+          },
+          {
+            "@type": "BreadcrumbList",
+            "@id": "https://infimagine.com/personalized-3d-printed-gifts#breadcrumb",
+            "itemListElement": [
+              {
+                "@type": "ListItem",
+                "position": 1,
+                "name": "Home",
+                "item": "https://infimagine.com/"
+              },
+              {
+                "@type": "ListItem",
+                "position": 2,
+                "name": "Personalized 3D Printed Gifts",
+                "item": "https://infimagine.com/personalized-3d-printed-gifts"
+              }
+            ]
+          }
+        ]
       }
     </script>
   </head>

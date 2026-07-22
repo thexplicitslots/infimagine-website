@@ -34,18 +34,60 @@
     <script type="application/ld+json">
       {
         "@context": "https://schema.org",
-        "@type": "Service",
-        "name": "Custom 3D Printing",
-        "serviceType": "Custom 3D printing",
-        "provider": {
-          "@type": "ProfessionalService",
-          "name": "InfiMagine3D",
-          "url": "https://infimagine.com/",
-          "email": "admin@infimagine.com",
-          "logo": "https://infimagine.com/assets/icon-512.png"
-        },
-        "areaServed": "India",
-        "description": "Custom 3D printing for one-off objects, models, utility parts, prototypes, decor, and made-to-fit physical ideas."
+        "@graph": [
+          {
+            "@type": "Service",
+            "@id": "https://infimagine.com/custom-3d-printing#service",
+            "name": "Custom 3D Printing",
+            "url": "https://infimagine.com/custom-3d-printing",
+            "serviceType": "Custom 3D printing",
+            "category": "3D printing service",
+            "provider": {
+              "@type": "ProfessionalService",
+              "@id": "https://infimagine.com/#business",
+              "name": "InfiMagine3D",
+              "url": "https://infimagine.com/",
+              "email": "admin@infimagine.com",
+              "logo": "https://infimagine.com/assets/icon-512.png",
+              "priceRange": "INR 1,500+",
+              "sameAs": [
+                "https://www.instagram.com/infimagine3d/",
+                "https://x.com/infimagine3d"
+              ],
+              "contactPoint": {
+                "@type": "ContactPoint",
+                "contactType": "customer support",
+                "email": "admin@infimagine.com",
+                "url": "https://infimagine.com/#estimate",
+                "areaServed": "IN",
+                "availableLanguage": ["English", "Hindi"]
+              }
+            },
+            "areaServed": {
+              "@type": "Country",
+              "name": "India"
+            },
+            "description": "Custom 3D printing for one-off objects, models, utility parts, prototypes, decor, and made-to-fit physical ideas."
+          },
+          {
+            "@type": "BreadcrumbList",
+            "@id": "https://infimagine.com/custom-3d-printing#breadcrumb",
+            "itemListElement": [
+              {
+                "@type": "ListItem",
+                "position": 1,
+                "name": "Home",
+                "item": "https://infimagine.com/"
+              },
+              {
+                "@type": "ListItem",
+                "position": 2,
+                "name": "Custom 3D Printing",
+                "item": "https://infimagine.com/custom-3d-printing"
+              }
+            ]
+          }
+        ]
       }
     </script>
   </head>
